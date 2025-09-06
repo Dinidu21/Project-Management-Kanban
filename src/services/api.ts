@@ -1,196 +1,207 @@
 // src/services/api.ts
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from "axios";
 
-// Types based on your backend DTOs
+// -------- AUTH --------
 export interface LoginRequest {
-    email: string;
+    username: string;  // Java expects username, not email
     password: string;
 }
 
 export interface RegisterRequest {
-    name: string;
+    username: string;
     email: string;
     password: string;
+    firstName?: string;
+    lastName?: string;
 }
 
 export interface AuthResponse {
     token: string;
-    user: User;
-}
-
-export interface User {
-    id: string;
-    name: string;
+    type: string;       // Java returns "Bearer"
+    username: string;
     email: string;
 }
 
+// -------- USER --------
+export interface User {
+    id: number;          // Java uses Long (number in JSON)
+    username: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    role: "USER" | "ADMIN";
+    createdAt: string;
+    updatedAt: string;
+}
+
+// -------- PROJECTS --------
+export type ProjectStatus = "PLANNING" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "CANCELLED";
+
 export interface ProjectRequest {
     name: string;
-    description: string;
-    status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
-    startDate: string;
-    endDate: string;
+    description?: string;
+    status: ProjectStatus;
+    startDate?: string;  // Java LocalDate serialized as ISO string
+    endDate?: string;
 }
 
 export interface Project {
-    id: string;
+    id: number;
     name: string;
-    description: string;
-    status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
-    startDate: string;
-    endDate: string;
+    description?: string;
+    status: ProjectStatus;
+    startDate?: string;
+    endDate?: string;
     owner: User;
     createdAt: string;
     updatedAt: string;
 }
 
+// -------- TASKS --------
+export type TaskStatus = "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+export type TaskPriority = "LOW" | "MEDIUM" | "HIGH" | "URGENT";  // Java uses URGENT, not CRITICAL
+
 export interface TaskRequest {
     title: string;
-    description: string;
-    status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-    dueDate: string;
-    projectId: string;
-    assigneeId?: string;
+    description?: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    dueDate?: string;
+    projectId: number;
+    assigneeId?: number;
+    tags?: string[];  // exists in Java DTO
 }
 
 export interface Task {
-    id: string;
+    id: number;
     title: string;
-    description: string;
-    status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-    dueDate: string;
+    description?: string;
+    status: TaskStatus;
+    priority: TaskPriority;
+    dueDate?: string;
     project: Project;
     assignee?: User;
+    tags?: string[];
     createdAt: string;
     updatedAt: string;
 }
 
+// -------- API SERVICE --------
 class ApiService {
     private client: AxiosInstance;
 
     constructor() {
         this.client = axios.create({
-            baseURL: process.env.REACT_APP_API_URL || 'http://localhost:8080/api',
+            baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080/api",
             timeout: 10000,
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { "Content-Type": "application/json" },
         });
 
-        // Request interceptor to add auth token
-        this.client.interceptors.request.use(
-            (config) => {
-                const token = localStorage.getItem('auth_token');
-                if (token) {
-                    config.headers.Authorization = `Bearer ${token}`;
-                }
-                return config;
-            },
-            (error) => {
-                return Promise.reject(error);
+        // Add token
+        this.client.interceptors.request.use((config) => {
+            const token = localStorage.getItem("auth_token");
+            if (token) {
+                config.headers.Authorization = `Bearer ${token}`;
             }
-        );
+            return config;
+        });
 
-        // Response interceptor for error handling
+        // Handle errors
         this.client.interceptors.response.use(
             (response) => response,
             (error) => {
                 if (error.response?.status === 401) {
-                    // Token expired or invalid
-                    localStorage.removeItem('auth_token');
-                    window.location.href = '/login';
+                    localStorage.removeItem("auth_token");
+                    window.location.href = "/login";
                 }
                 return Promise.reject(error);
             }
         );
     }
 
-    // Auth endpoints
-    async login(loginData: LoginRequest): Promise<AuthResponse> {
-        const response: AxiosResponse<AuthResponse> = await this.client.post('/auth/login', loginData);
+    // -------- AUTH --------
+    async login(data: LoginRequest): Promise<AuthResponse> {
+        const response: AxiosResponse<AuthResponse> = await this.client.post("/auth/login", data);
         if (response.data.token) {
-            localStorage.setItem('auth_token', response.data.token);
+            localStorage.setItem("auth_token", response.data.token);
         }
         return response.data;
     }
 
-    async register(registerData: RegisterRequest): Promise<AuthResponse> {
-        const response: AxiosResponse<AuthResponse> = await this.client.post('/auth/register', registerData);
+    async register(data: RegisterRequest): Promise<AuthResponse> {
+        const response: AxiosResponse<AuthResponse> = await this.client.post("/auth/register", data);
         if (response.data.token) {
-            localStorage.setItem('auth_token', response.data.token);
+            localStorage.setItem("auth_token", response.data.token);
         }
         return response.data;
     }
 
     logout(): void {
-        localStorage.removeItem('auth_token');
+        localStorage.removeItem("auth_token");
     }
 
-    // Project endpoints
+    // -------- PROJECTS --------
     async getProjects(): Promise<Project[]> {
-        const response: AxiosResponse<Project[]> = await this.client.get('/projects');
+        const response: AxiosResponse<Project[]> = await this.client.get("/projects");
         return response.data;
     }
 
-    async getProject(id: string): Promise<Project> {
+    async getProject(id: number): Promise<Project> {
         const response: AxiosResponse<Project> = await this.client.get(`/projects/${id}`);
         return response.data;
     }
 
-    async createProject(projectData: ProjectRequest): Promise<Project> {
-        const response: AxiosResponse<Project> = await this.client.post('/projects', projectData);
+    async createProject(data: ProjectRequest): Promise<Project> {
+        const response: AxiosResponse<Project> = await this.client.post("/projects", data);
         return response.data;
     }
 
-    async updateProject(id: string, projectData: ProjectRequest): Promise<Project> {
-        const response: AxiosResponse<Project> = await this.client.put(`/projects/${id}`, projectData);
+    async updateProject(id: number, data: ProjectRequest): Promise<Project> {
+        const response: AxiosResponse<Project> = await this.client.put(`/projects/${id}`, data);
         return response.data;
     }
 
-    async deleteProject(id: string): Promise<void> {
+    async deleteProject(id: number): Promise<void> {
         await this.client.delete(`/projects/${id}`);
     }
 
-    // Task endpoints
+    // -------- TASKS --------
     async getTasks(): Promise<Task[]> {
-        const response: AxiosResponse<Task[]> = await this.client.get('/tasks');
+        const response: AxiosResponse<Task[]> = await this.client.get("/tasks");
         return response.data;
     }
 
-    async getTask(id: string): Promise<Task> {
+    async getTask(id: number): Promise<Task> {
         const response: AxiosResponse<Task> = await this.client.get(`/tasks/${id}`);
         return response.data;
     }
 
-    async createTask(taskData: TaskRequest): Promise<Task> {
-        const response: AxiosResponse<Task> = await this.client.post('/tasks', taskData);
+    async createTask(data: TaskRequest): Promise<Task> {
+        const response: AxiosResponse<Task> = await this.client.post("/tasks", data);
         return response.data;
     }
 
-    async updateTask(id: string, taskData: Partial<TaskRequest>): Promise<Task> {
-        const response: AxiosResponse<Task> = await this.client.put(`/tasks/${id}`, taskData);
+    async updateTask(id: number, data: Partial<TaskRequest>): Promise<Task> {
+        const response: AxiosResponse<Task> = await this.client.put(`/tasks/${id}`, data);
         return response.data;
     }
 
-    async deleteTask(id: string): Promise<void> {
+    async deleteTask(id: number): Promise<void> {
         await this.client.delete(`/tasks/${id}`);
     }
 
-    async getTaskCountByStatus(status: Task['status']): Promise<number> {
+    async getTaskCountByStatus(status: TaskStatus): Promise<number> {
         const response: AxiosResponse<number> = await this.client.get(`/tasks/stats/${status}`);
         return response.data;
     }
 
-    // Utility method to check if user is authenticated
+    // -------- USER --------
     isAuthenticated(): boolean {
-        return !!localStorage.getItem('auth_token');
+        return !!localStorage.getItem("auth_token");
     }
 
-    // Get current user from token (you might need to add a /me endpoint to your backend)
     async getCurrentUser(): Promise<User> {
-        const response: AxiosResponse<User> = await this.client.get('/auth/me');
+        const response: AxiosResponse<User> = await this.client.get("/auth/me");
         return response.data;
     }
 }
