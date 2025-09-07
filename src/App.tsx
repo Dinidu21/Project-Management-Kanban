@@ -99,8 +99,8 @@ interface Task {
 }
 
 // Components
-const AuthForm: React.FC<{ isLogin: boolean; onToggle: () => void }> = ({ isLogin, onToggle }) => {
-  const [formData, setFormData] = useState({ name: '', email: '', password: '' });
+const AuthForm: React.FC<{ isLogin: boolean; onToggle: () => void; initialUsername?: string }> = ({ isLogin, onToggle, initialUsername = '' }) => {
+  const [formData, setFormData] = useState({ username: initialUsername, email: '', password: '' });
 
   const loginMutation = useLogin();
   const registerMutation = useRegister();
@@ -110,18 +110,20 @@ const AuthForm: React.FC<{ isLogin: boolean; onToggle: () => void }> = ({ isLogi
     try {
       if (isLogin) {
         await loginMutation.mutateAsync({
-          email: formData.email,
+          username: formData.username,
           password: formData.password
         });
       } else {
-        await registerMutation.mutateAsync({
-          name: formData.name,
+        const response = await registerMutation.mutateAsync({
+          username: formData.username,
           email: formData.email,
           password: formData.password
         });
+        // Set username for login form after registration
+        setFormData({ username: response.username || formData.username, email: '', password: '' });
+        onToggle(); // Switch to login form
       }
     } catch (error) {
-      // Error handling is done in the hooks
       console.error('Auth error:', error);
     }
   };
@@ -144,30 +146,30 @@ const AuthForm: React.FC<{ isLogin: boolean; onToggle: () => void }> = ({ isLogi
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div>
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Enter your name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required={!isLogin}
-                />
-              </div>
-            )}
             <div>
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="username">Username</Label>
               <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                id="username"
+                type="text"
+                placeholder="Enter your username"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 required
               />
             </div>
+            {isLogin ? null : (
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  required
+                />
+              </div>
+            )}
             <div>
               <Label htmlFor="password">Password</Label>
               <Input
@@ -1065,6 +1067,7 @@ const Header: React.FC<{ onNavigate: (view: string) => void; currentView: string
 const AppContent: React.FC = () => {
   const [currentView, setCurrentView] = useState('dashboard');
   const [isLogin, setIsLogin] = useState(true);
+  const [initialUsername, setInitialUsername] = useState('');
 
   const { data: user, isLoading } = useCurrentUser();
 
@@ -1089,7 +1092,11 @@ const AppContent: React.FC = () => {
     return (
       <AuthForm
         isLogin={isLogin}
-        onToggle={() => setIsLogin(!isLogin)}
+        onToggle={() => {
+          setIsLogin(!isLogin);
+          if (!isLogin) setInitialUsername(''); // Clear username when switching to login
+        }}
+        initialUsername={initialUsername}
       />
     );
   }
@@ -1097,7 +1104,6 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header onNavigate={setCurrentView} currentView={currentView} />
-
       <main className="container mx-auto px-4 py-8">
         {currentView === 'dashboard' && <Dashboard />}
         {currentView === 'projects' && <ProjectsView />}

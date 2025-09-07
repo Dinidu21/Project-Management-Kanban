@@ -51,13 +51,14 @@ export const useRegister = () => {
 
     return useMutation({
         mutationFn: (data: RegisterRequest) => apiService.register(data),
-        onSuccess: async () => {
+        onSuccess: async (response, variables) => {
             const user = await apiService.getCurrentUser();
             queryClient.setQueryData<User>(queryKeys.user, user);
             toast({
                 title: 'Success',
                 description: 'Account created successfully',
             });
+            return { ...response, username: variables.username };
         },
         onError: (error: any) => {
             toast({

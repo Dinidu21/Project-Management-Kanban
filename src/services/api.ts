@@ -86,13 +86,20 @@ export interface Task {
     updatedAt: string;
 }
 
+export interface CurrentUser {
+    id: number;
+    username: string;
+    email: string;
+    role: string;
+}
+
 // -------- API SERVICE --------
 class ApiService {
     private client: AxiosInstance;
 
     constructor() {
         this.client = axios.create({
-            baseURL: process.env.REACT_APP_API_URL || "http://localhost:8080/api",
+            baseURL: import.meta.env.VITE_API_URL || "http://localhost:8080/api",
             timeout: 10000,
             headers: { "Content-Type": "application/json" },
         });
@@ -200,8 +207,8 @@ class ApiService {
         return !!localStorage.getItem("auth_token");
     }
 
-    async getCurrentUser(): Promise<User> {
-        const response: AxiosResponse<User> = await this.client.get("/auth/me");
+    async getCurrentUser(): Promise<CurrentUser> {
+        const response: AxiosResponse<CurrentUser> = await this.client.get("/auth/me");
         return response.data;
     }
 }
