@@ -107,6 +107,7 @@ class ApiService {
         // Add token
         this.client.interceptors.request.use((config) => {
             const token = localStorage.getItem("auth_token");
+            console.debug('[api] request', { url: config.url, method: config.method, tokenPresent: !!token });
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -115,9 +116,14 @@ class ApiService {
 
         // Handle errors
         this.client.interceptors.response.use(
-            (response) => response,
+            (response) => {
+                console.debug('[api] response', { url: response.config.url, status: response.status });
+                return response;
+            },
             (error) => {
+                console.error('[api] response error', error?.response?.status, error?.response?.data);
                 if (error.response?.status === 401) {
+                    console.warn('[api] 401 - clearing token and redirecting to /login');
                     localStorage.removeItem("auth_token");
                     window.location.href = "/login";
                 }
@@ -128,17 +134,23 @@ class ApiService {
 
     // -------- AUTH --------
     async login(data: LoginRequest): Promise<AuthResponse> {
+        console.debug('[api] login attempt', { username: data.username });
         const response: AxiosResponse<AuthResponse> = await this.client.post("/auth/login", data);
+        console.debug('[api] login response', response.data);
         if (response.data.token) {
             localStorage.setItem("auth_token", response.data.token);
+            console.debug('[api] token stored');
         }
         return response.data;
     }
 
     async register(data: RegisterRequest): Promise<AuthResponse> {
+        console.debug('[api] register attempt', { username: data.username, email: data.email });
         const response: AxiosResponse<AuthResponse> = await this.client.post("/auth/register", data);
+        console.debug('[api] register response', response.data);
         if (response.data.token) {
             localStorage.setItem("auth_token", response.data.token);
+            console.debug('[api] token stored');
         }
         return response.data;
     }

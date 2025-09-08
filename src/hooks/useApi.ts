@@ -9,6 +9,7 @@ import apiService, {
     Project,
     Task,
     User,
+    CurrentUser,
 } from '@/services/api';
 
 // Query Keys
@@ -29,14 +30,17 @@ export const useLogin = () => {
         mutationFn: (data: LoginRequest) => apiService.login(data),
         onSuccess: async () => {
             // fetch current user after login
+            console.debug('[useApi] login onSuccess - fetching current user');
             const user = await apiService.getCurrentUser();
-            queryClient.setQueryData<User>(queryKeys.user, user);
+            console.debug('[useApi] current user', user);
+            queryClient.setQueryData<CurrentUser>(queryKeys.user, user);
             toast({
                 title: 'Success',
                 description: 'Logged in successfully',
             });
         },
         onError: (error: any) => {
+            console.error('[useApi] login onError', error);
             toast({
                 title: 'Error',
                 description: error.response?.data?.message || 'Login failed',
@@ -52,8 +56,10 @@ export const useRegister = () => {
     return useMutation({
         mutationFn: (data: RegisterRequest) => apiService.register(data),
         onSuccess: async (response, variables) => {
+            console.debug('[useApi] register onSuccess - fetching current user');
             const user = await apiService.getCurrentUser();
-            queryClient.setQueryData<User>(queryKeys.user, user);
+            console.debug('[useApi] current user', user);
+            queryClient.setQueryData<CurrentUser>(queryKeys.user, user);
             toast({
                 title: 'Success',
                 description: 'Account created successfully',
@@ -61,6 +67,7 @@ export const useRegister = () => {
             return { ...response, username: variables.username };
         },
         onError: (error: any) => {
+            console.error('[useApi] register onError', error);
             toast({
                 title: 'Error',
                 description: error.response?.data?.message || 'Registration failed',
