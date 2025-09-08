@@ -3,7 +3,6 @@ package com.dinidu.pms.service;
 
 import com.dinidu.pms.dto.TaskRequest;
 import com.dinidu.pms.entity.Project;
-import com.dinidu.pms.entity.Tag;
 import com.dinidu.pms.entity.Task;
 import com.dinidu.pms.entity.User;
 import com.dinidu.pms.repo.ProjectRepository;
@@ -25,7 +24,6 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
-    private final TagService tagService;
     private final UserService userService;
 
     public List<Task> getAllTasks() {
@@ -66,16 +64,6 @@ public class TaskService {
 
         Task task = taskBuilder.build();
 
-        // Handle tags
-        if (request.getTags() != null && !request.getTags().isEmpty()) {
-            Set<Tag> tags = new HashSet<>();
-            for (String tagName : request.getTags()) {
-                Tag tag = tagService.findOrCreateTag(tagName);
-                tags.add(tag);
-            }
-            task.setTags(tags);
-        }
-
         return taskRepository.save(task);
     }
 
@@ -107,16 +95,6 @@ public class TaskService {
             User assignee = userRepository.findById(request.getAssigneeId())
                     .orElseThrow(() -> new RuntimeException("Assignee not found"));
             task.setAssignee(assignee);
-        }
-
-        // Handle tags
-        if (request.getTags() != null) {
-            Set<Tag> tags = new HashSet<>();
-            for (String tagName : request.getTags()) {
-                Tag tag = tagService.findOrCreateTag(tagName);
-                tags.add(tag);
-            }
-            task.setTags(tags);
         }
 
         return taskRepository.save(task);

@@ -47,14 +47,6 @@ public class Task {
     @JoinColumn(name = "assignee_id")
     private User assignee;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "task_tags",
-            joinColumns = @JoinColumn(name = "task_id"),
-            inverseJoinColumns = @JoinColumn(name = "tag_id")
-    )
-    private Set<Tag> tags;
-
     @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;

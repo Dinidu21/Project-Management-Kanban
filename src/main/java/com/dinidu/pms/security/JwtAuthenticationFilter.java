@@ -1,6 +1,5 @@
 package com.dinidu.pms.security;
 
-import com.dinidu.pms.security.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +29,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        if (request.getServletPath().contains("/api/auth")) {
+        // skip only login and register endpoints (they don't have Authorization header)
+        String path = request.getServletPath();
+        if ("/api/auth/login".equals(path) || "/api/auth/register".equals(path)) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -59,8 +60,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         new WebAuthenticationDetailsSource().buildDetails(request)
                 );
                 SecurityContextHolder.getContext().setAuthentication(authToken);
+            } else {
+                // token invalid - do nothing, downstream will treat as unauthenticated
             }
         }
+
         filterChain.doFilter(request, response);
     }
 }
