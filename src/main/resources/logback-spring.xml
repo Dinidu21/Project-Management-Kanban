@@ -1,0 +1,35 @@
+<configuration scan="true">
+
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%X{traceId:-no-trace}] %highlight(%-5level) %cyan(%logger{36}) - %msg%n"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Keep the root at INFO to avoid noise -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+    <!-- Our logging components may emit DEBUG body logs; enable them explicitly -->
+    <logger name="com.dinidu.pms.logging" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+
+    <!-- Common Spring/Web noise reductions (optional tune) -->
+    <logger name="org.springframework" level="INFO"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type.descriptor.sql" level="WARN"/>
+
+    <!--
+        Notes:
+        - CorrelationIdFilter sets MDC key 'traceId' and response header 'X-Correlation-Id'
+        - HttpLoggingFilter logs IN/OUT lines and (DEBUG) request/response bodies with simple masking
+        - LoggingAspect logs controller method ENTER/EXIT/THROW with masked args and return values
+        - Adjust com.dinidu.pms.logging level to INFO in production if body logs are too verbose
+    -->
+
+</configuration>
