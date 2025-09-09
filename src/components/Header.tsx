@@ -2,6 +2,7 @@
 import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import ProfileModal from './ProfileModal';
 import { LogOut, Target, Home, FolderOpen, CheckCircle } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/useApi';
 import apiService from '@/services/api';
@@ -13,6 +14,8 @@ const Header: React.FC<{ onNavigate: (view: string) => void; currentView: string
         apiService.logout();
         window.location.reload();
     };
+
+    const [isProfileOpen, setIsProfileOpen] = React.useState(false);
 
     return (
         <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
@@ -33,12 +36,12 @@ const Header: React.FC<{ onNavigate: (view: string) => void; currentView: string
                 </div>
 
                 <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 cursor-pointer" onClick={() => setIsProfileOpen(true)}>
                         <Avatar>
-                            <AvatarFallback>{user?.name?.split(' ').map((n: string) => n[0]).join('') || 'U'}</AvatarFallback>
+                            <AvatarFallback>{(user?.username || 'U').toString().split(' ').map((n: string) => n[0]).join('') || 'U'}</AvatarFallback>
                         </Avatar>
                         <div className="hidden md:block">
-                            <p className="text-sm font-medium">{user?.name}</p>
+                            <p className="text-sm font-medium">{(user as any)?.firstName || (user as any)?.username || 'User'}</p>
                             <p className="text-xs text-muted-foreground">{user?.email}</p>
                         </div>
                     </div>
@@ -46,6 +49,7 @@ const Header: React.FC<{ onNavigate: (view: string) => void; currentView: string
                     <Button variant="ghost" size="sm" onClick={handleLogout}><LogOut className="h-4 w-4" /></Button>
                 </div>
             </div>
+            <ProfileModal isOpen={isProfileOpen} onClose={() => setIsProfileOpen(false)} />
         </header>
     );
 };

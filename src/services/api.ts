@@ -30,6 +30,7 @@ export interface User {
     firstName?: string;
     lastName?: string;
     role: "USER" | "ADMIN";
+    password?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -90,6 +91,8 @@ export interface CurrentUser {
     id: number;
     username: string;
     email: string;
+    firstName?: string;
+    lastName?: string;
     role: string;
 }
 
@@ -121,7 +124,8 @@ class ApiService {
                 return response;
             },
             (error) => {
-                console.error('[api] response error', error?.response?.status, error?.response?.data);
+                // More robust logging when the response is missing (network error / server down)
+                console.error('[api] response error', error?.response?.status, error?.response?.data || error?.message);
                 if (error.response?.status === 401) {
                     console.warn('[api] 401 - clearing token and redirecting to /login');
                     localStorage.removeItem("auth_token");
@@ -220,8 +224,20 @@ class ApiService {
     }
 
     async getCurrentUser(): Promise<CurrentUser> {
-        const response: AxiosResponse<CurrentUser> = await this.client.get("/auth/me");
+        const response: AxiosResponse<CurrentUser> = await this.client.get("/users/me");
         return response.data;
+    }
+
+    async updateUser(id: number, data: { firstName?: string; lastName?: string; email?: string; username?: string; password?: string; }): Promise<User> {
+        const response: AxiosResponse<any> = await this.client.put(`/users/${id}`, data);
+        // backend may return { user, token } when username changed
+        if (response.data?.token) {
+            const token = response.data.token;
+            localStorage.setItem("auth_token", token);
+            console.debug('[api] updateUser - new token stored due to username change');
+            return response.data.user;
+        }
+        return response.data as User;
     }
 }
 

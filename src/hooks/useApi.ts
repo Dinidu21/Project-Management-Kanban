@@ -264,3 +264,19 @@ export const useTaskCountByStatus = (status: Task['status']) => {
         enabled: !!status && apiService.isAuthenticated(),
     });
 };
+
+// -------- USER MUTATIONS --------
+export const useUpdateUser = () => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: Partial<User> }) => apiService.updateUser(id, data),
+        onSuccess: (updated) => {
+            // updated may be a User or an object containing user + token (handled in api)
+            queryClient.setQueryData(queryKeys.user, updated);
+        },
+        onError: (error: any) => {
+            toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update profile', variant: 'destructive' });
+        },
+    });
+};
