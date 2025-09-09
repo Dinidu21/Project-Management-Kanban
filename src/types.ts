@@ -1,8 +1,10 @@
 // src/types.ts
 export interface User {
     id: string | number;
-    name: string;
+    username?: string;
     email: string;
+    firstName?: string;
+    lastName?: string;
 }
 
 export interface Project {
