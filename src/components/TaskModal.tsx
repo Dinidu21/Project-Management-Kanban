@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { useProjects, useCurrentUser, useCreateTask } from '@/hooks/useApi';
+import { format, parseISO } from 'date-fns';
+import { useProjects, useCurrentUser, useCreateTask, useUpdateTask } from '@/hooks/useApi';
+import type { Task } from '@/types';
 
-const TaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+const TaskModal: React.FC<{ isOpen: boolean; onClose: () => void; task?: Task | null; onSaved?: () => void }> = ({ isOpen, onClose, task = null, onSaved }) => {
     const { data: projects = [] } = useProjects();
     const { data: user } = useCurrentUser();
 
@@ -22,41 +23,64 @@ const TaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
         status: 'TODO' as any,
         priority: 'MEDIUM' as any,
         dueDate: new Date(),
-        projectId: ''
+        projectId: '' as any
     });
 
     const createTaskMutation = useCreateTask();
+    const updateTaskMutation = useUpdateTask();
 
     useEffect(() => {
+        if (task && isOpen) {
+            setFormData({
+                title: task.title || '',
+                description: task.description || '',
+                status: task.status || 'TODO',
+                priority: task.priority || 'MEDIUM',
+                dueDate: task.dueDate ? parseISO(task.dueDate) : new Date(),
+                projectId: task.project?.id ? String(task.project.id) : (projects[0]?.id ? String(projects[0].id) : '')
+            });
+            return;
+        }
+
         if (projects.length > 0 && !formData.projectId) {
             setFormData(prev => ({ ...prev, projectId: projects[0].id }));
         }
-    }, [projects, formData.projectId]);
+    }, [projects, task, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await createTaskMutation.mutateAsync({
+            const payload = {
                 title: formData.title,
                 description: formData.description,
                 status: formData.status,
                 priority: formData.priority,
                 dueDate: formData.dueDate.toISOString(),
-                projectId: formData.projectId,
-                assigneeId: user?.id
-            });
+                projectId: Number(formData.projectId),
+                assigneeId: Number(user?.id)
+            };
+
+            if (task) {
+                await updateTaskMutation.mutateAsync({ id: Number(task.id), data: payload });
+            } else {
+                await createTaskMutation.mutateAsync(payload);
+            }
+
             onClose();
-            setFormData({ title: '', description: '', status: 'TODO', priority: 'MEDIUM', dueDate: new Date(), projectId: projects[0]?.id || '' });
+            onSaved && onSaved();
         } catch (error) {
-            console.error('Failed to create task:', error);
+            console.error('Failed to save task:', error);
         }
     };
+
+    const mutation = task ? updateTaskMutation : createTaskMutation;
+    const saving = Boolean((mutation as any).isLoading || (mutation as any).isPending || (mutation as any).status === 'loading');
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Create New Task</DialogTitle>
+                    <DialogTitle>{task ? 'Edit Task' : 'Create New Task'}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -92,7 +116,7 @@ const TaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
                                     <SelectItem value="LOW">Low</SelectItem>
                                     <SelectItem value="MEDIUM">Medium</SelectItem>
                                     <SelectItem value="HIGH">High</SelectItem>
-                                    <SelectItem value="CRITICAL">Critical</SelectItem>
+                                    <SelectItem value="URGENT">Urgent</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -105,7 +129,7 @@ const TaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
                             </SelectTrigger>
                             <SelectContent>
                                 {projects.map(project => (
-                                    <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
+                                    <SelectItem key={project.id} value={String(project.id)}>{project.name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -126,7 +150,7 @@ const TaskModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen,
                     </div>
                     <div className="flex space-x-2 pt-4">
                         <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-                        <Button type="submit" className="flex-1 bg-gradient-primary" disabled={createTaskMutation.isPending}>{createTaskMutation.isPending ? 'Creating...' : 'Create'}</Button>
+                        <Button type="submit" className="flex-1 bg-gradient-primary" disabled={saving}>{saving ? (task ? 'Saving...' : 'Creating...') : (task ? 'Save' : 'Create')}</Button>
                     </div>
                 </form>
             </DialogContent>

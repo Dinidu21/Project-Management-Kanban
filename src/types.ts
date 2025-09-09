@@ -20,9 +20,9 @@ export interface Project {
 export interface Task {
     id: string | number;
     title: string;
-    description: string;
+    description?: string;
     status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';
-    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+    priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
     dueDate: string;
     project: Project;
     assignee?: User;

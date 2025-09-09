@@ -13,13 +13,14 @@ const TasksView: React.FC = () => {
     const { data: tasks = [], isLoading, error } = useTasks();
     const { data: projects = [] } = useProjects();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTask, setSelectedTask] = useState<any | null>(null);
     const [filters, setFilters] = useState({ search: '', status: 'all', priority: 'all', project: 'all' });
 
     const filteredTasks = tasks.filter(task => {
         if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
         if (filters.status !== 'all' && task.status !== filters.status) return false;
         if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
-        if (filters.project !== 'all' && task.project.id !== filters.project) return false;
+        if (filters.project !== 'all' && String(task.project.id) !== filters.project) return false;
         return true;
     });
 
@@ -61,7 +62,7 @@ const TasksView: React.FC = () => {
                                 <SelectItem value="LOW">Low</SelectItem>
                                 <SelectItem value="MEDIUM">Medium</SelectItem>
                                 <SelectItem value="HIGH">High</SelectItem>
-                                <SelectItem value="CRITICAL">Critical</SelectItem>
+                                <SelectItem value="URGENT">Urgent</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={filters.project} onValueChange={(value) => setFilters({ ...filters, project: value })}>
@@ -70,7 +71,7 @@ const TasksView: React.FC = () => {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Projects</SelectItem>
-                                {projects.map(project => <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>)}
+                                {projects.map(project => <SelectItem key={project.id} value={String(project.id)}>{project.name}</SelectItem>)}
                             </SelectContent>
                         </Select>
                     </div>
@@ -85,11 +86,11 @@ const TasksView: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredTasks.map((task) => <TaskCard key={task.id} task={task} />)}
+                    {filteredTasks.map((task) => <TaskCard key={task.id} task={task} onEdit={() => { setSelectedTask(task); setIsModalOpen(true); }} />)}
                 </div>
             )}
 
-            <TaskModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <TaskModal isOpen={isModalOpen} task={selectedTask} onClose={() => { setIsModalOpen(false); setSelectedTask(null); }} onSaved={() => setSelectedTask(null)} />
         </div>
     );
 };

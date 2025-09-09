@@ -5,20 +5,20 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { MoreVertical, Trash2 } from 'lucide-react';
+import { MoreVertical, Trash2, Edit3 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useDeleteTask } from '@/hooks/useApi';
 import type { Task } from '@/types';
 
-const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+const TaskCard: React.FC<{ task: Task; onEdit?: () => void }> = ({ task, onEdit }) => {
     const deleteTaskMutation = useDeleteTask();
 
     const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'DONE';
 
     const handleDelete = async () => {
         if (confirm('Are you sure you want to delete this task?')) {
-            await deleteTaskMutation.mutateAsync(task.id);
+            await deleteTaskMutation.mutateAsync(Number(task.id));
         }
     };
 
@@ -34,7 +34,7 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
-            case 'CRITICAL': return 'border-priority-critical text-priority-critical';
+            case 'URGENT': return 'border-priority-urgent text-priority-urgent';
             case 'HIGH': return 'border-priority-high text-priority-high';
             case 'MEDIUM': return 'border-priority-medium text-priority-medium';
             case 'LOW': return 'border-priority-low text-priority-low';
@@ -61,6 +61,10 @@ const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-32 p-1">
+                                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onEdit && onEdit()}>
+                                    <Edit3 className="h-3 w-3 mr-2" />
+                                    Edit
+                                </Button>
                                 <Button variant="ghost" size="sm" className="w-full justify-start text-destructive" onClick={handleDelete}>
                                     <Trash2 className="h-3 w-3 mr-2" />
                                     Delete

@@ -72,7 +72,7 @@ export default {
 					low: 'hsl(var(--priority-low))',
 					medium: 'hsl(var(--priority-medium))',
 					high: 'hsl(var(--priority-high))',
-					critical: 'hsl(var(--priority-critical))'
+					urgent: 'hsl(var(--priority-urgent))'
 				}
 			},
 			backgroundImage: {
