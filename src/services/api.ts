@@ -111,7 +111,7 @@ class ApiService {
         this.client.interceptors.request.use((config) => {
             const token = localStorage.getItem("auth_token");
             console.debug('[api] request', { url: config.url, method: config.method, tokenPresent: !!token });
-            if (token) {
+            if (token && token.trim().length > 0) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
             return config;
@@ -157,6 +157,12 @@ class ApiService {
             console.debug('[api] token stored');
         }
         return response.data;
+    }
+
+    // -------- OAUTH --------
+    async getOAuthAuthorizeUrl(provider: 'google' | 'github'): Promise<string> {
+        const response = await this.client.get(`/auth/oauth2/${provider}/authorize`);
+        return (response.data as any).url;
     }
 
     logout(): void {
