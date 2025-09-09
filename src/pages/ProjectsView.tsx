@@ -89,9 +89,9 @@ const ProjectsView: React.FC = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(['PLANNING','ACTIVE','ON_HOLD','COMPLETED','CANCELLED'] as const).map(col => (
+                    {(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'] as const).map(col => (
                         <div key={col} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleProjectDrop(e, col)} className="p-2 rounded-md bg-card">
-                            <h3 className="text-sm font-medium mb-2">{col.replace('_',' ')}</h3>
+                            <h3 className="text-sm font-medium mb-2">{col.replace('_', ' ')}</h3>
                             {projects.filter(p => p.status === col).map(project => (
                                 <div key={project.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', String(project.id))} className="mb-3">
                                     <ProjectCard project={project} onEdit={() => { setSelectedProject(project); setIsModalOpen(true); }} />

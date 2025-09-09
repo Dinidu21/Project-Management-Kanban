@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Toaster } from '@/components/ui/sonner';
+import { ThemeProvider } from 'next-themes';
 
 import Dashboard from '@/pages/Dashboard';
 import ProjectsView from '@/pages/ProjectsView';
@@ -27,16 +28,14 @@ const AppContent: React.FC = () => {
 
   const { data: user, isLoading } = useCurrentUser();
 
-  useEffect(() => { document.documentElement.classList.add('dark'); }, []);
-
   if (isLoading) return <div className="min-h-screen flex items-center justify-center bg-background">Loading...</div>;
 
   if (!user) return (
     <AuthForm
       isLogin={isLogin}
-  onToggle={() => { setIsLogin(!isLogin); if (!isLogin) setInitialUsername(''); }}
+      onToggle={() => { setIsLogin(!isLogin); if (!isLogin) setInitialUsername(''); }}
       initialUsername={initialUsername}
-  onSuccess={() => setCurrentView('dashboard')}
+      onSuccess={() => setCurrentView('dashboard')}
     />
   );
 
@@ -54,8 +53,10 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => (
   <QueryClientProvider client={queryClient}>
-    <AppContent />
-    <Toaster />
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <AppContent />
+      <Toaster />
+    </ThemeProvider>
     <ReactQueryDevtools initialIsOpen={false} />
   </QueryClientProvider>
 );
