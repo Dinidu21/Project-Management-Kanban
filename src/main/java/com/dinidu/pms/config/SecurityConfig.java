@@ -32,8 +32,8 @@ public class SecurityConfig {
                 csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> {}) // enable CORS with CorsConfig
         .authorizeHttpRequests(auth -> auth
-            // Only allow anonymous access to login and register endpoints
-            .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+            // Allow anonymous access to login, register and oauth endpoints
+            .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/oauth2/**").permitAll()
             .requestMatchers("/api/**").authenticated()
             .anyRequest().permitAll()
         )

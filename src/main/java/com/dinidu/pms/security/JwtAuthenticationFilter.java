@@ -32,9 +32,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
-        // skip only login and register endpoints (they don't have Authorization header)
-        String path = request.getServletPath();
-        if ("/api/auth/login".equals(path) || "/api/auth/register".equals(path)) {
+    // skip endpoints that don't require Authorization header (login/register and oauth endpoints)
+    String path = request.getServletPath();
+    if ("/api/auth/login".equals(path) || "/api/auth/register".equals(path)
+        || path.startsWith("/api/auth/oauth2/") ) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -49,7 +50,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = authHeader.substring(7);
-        username = jwtService.extractUsername(jwt);
+        try {
+            username = jwtService.extractUsername(jwt);
+        } catch (io.jsonwebtoken.JwtException ex) {
+            // malformed/invalid token — treat as unauthenticated and continue
+            logger.warn("Malformed or invalid JWT provided in Authorization header: {}", ex.getMessage());
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {
