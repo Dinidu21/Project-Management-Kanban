@@ -1,6 +1,7 @@
 package com.dinidu.pms.service;
 
 import com.dinidu.pms.dto.AuthResponse;
+import com.dinidu.pms.dto.UpdateUserRequest;
 import com.dinidu.pms.dto.LoginRequest;
 import com.dinidu.pms.dto.RegisterRequest;
 import com.dinidu.pms.entity.User;
@@ -71,4 +72,29 @@ public class UserService {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
+
+        public User updateProfile(Long id, UpdateUserRequest request, String currentUsername) {
+                var user = userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+
+                // only allow updating own profile (or admin in future)
+                if (!user.getUsername().equals(currentUsername)) {
+                        throw new RuntimeException("Unauthorized");
+                }
+
+                if (request.getUsername() != null && !request.getUsername().isBlank()) {
+                        user.setUsername(request.getUsername());
+                }
+                if (request.getFirstName() != null) user.setFirstName(request.getFirstName());
+                if (request.getLastName() != null) user.setLastName(request.getLastName());
+                if (request.getPassword() != null && !request.getPassword().isBlank()) {
+                        user.setPassword(passwordEncoder.encode(request.getPassword()));
+                }
+
+                userRepository.save(user);
+                return user;
+        }
+
+                public String generateTokenFor(User user) {
+                        return jwtService.generateToken(user);
+                }
 }
