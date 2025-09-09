@@ -1,5 +1,5 @@
 // src/pages/TasksView.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTasks, useProjects } from '@/hooks/useApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,17 @@ const TasksView: React.FC = () => {
     const { data: projects = [] } = useProjects();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<any | null>(null);
+    // filters drives the filteredTasks; we keep a local searchTerm to enable realtime typing
     const [filters, setFilters] = useState({ search: '', status: 'all', priority: 'all', project: 'all' });
+    const [searchTerm, setSearchTerm] = useState<string>(filters.search);
+
+    // debounce updating the filter.search so the UI updates smoothly while typing
+    useEffect(() => {
+        const id = setTimeout(() => {
+            setFilters(prev => ({ ...prev, search: searchTerm }));
+        }, 150);
+        return () => clearTimeout(id);
+    }, [searchTerm, setFilters]);
 
     const filteredTasks = tasks.filter(task => {
         if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
@@ -39,7 +49,7 @@ const TasksView: React.FC = () => {
                     <div className="flex flex-col md:flex-row gap-4">
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Search tasks..." value={filters.search} onChange={(e) => setFilters({ ...filters, search: e.target.value })} className="pl-10" />
+                            <Input placeholder="Search tasks..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
                         </div>
                         <Select value={filters.status} onValueChange={(value) => setFilters({ ...filters, status: value })}>
                             <SelectTrigger className="w-40">
