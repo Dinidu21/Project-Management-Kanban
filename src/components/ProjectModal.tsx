@@ -9,10 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { format } from 'date-fns';
-import { useCreateProject } from '@/hooks/useApi';
+import { format, parseISO } from 'date-fns';
+import { useCreateProject, useUpdateProject } from '@/hooks/useApi';
+import type { Project } from '@/types';
+import { useEffect } from 'react';
 
-const ProjectModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
+const ProjectModal: React.FC<{ isOpen: boolean; onClose: () => void; project?: Project | null; onSaved?: () => void }> = ({ isOpen, onClose, project = null, onSaved }) => {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -22,29 +24,56 @@ const ProjectModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOp
     });
 
     const createProjectMutation = useCreateProject();
+    const updateProjectMutation = useUpdateProject();
+
+    // populate form when editing
+    useEffect(() => {
+        if (project && isOpen) {
+            setFormData({
+                name: project.name || '',
+                description: project.description || '',
+                status: project.status || 'PLANNING',
+                startDate: project.startDate ? parseISO(project.startDate) : new Date(),
+                endDate: project.endDate ? parseISO(project.endDate) : new Date()
+            });
+        }
+        if (!project && isOpen) {
+            setFormData({ name: '', description: '', status: 'PLANNING', startDate: new Date(), endDate: new Date() });
+        }
+    }, [project, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await createProjectMutation.mutateAsync({
+            const payload = {
                 name: formData.name,
                 description: formData.description,
                 status: formData.status,
                 startDate: formData.startDate.toISOString(),
                 endDate: formData.endDate.toISOString()
-            });
+            };
+
+            if (project) {
+                await updateProjectMutation.mutateAsync({ id: Number(project.id), data: payload });
+            } else {
+                await createProjectMutation.mutateAsync(payload);
+            }
+
             onClose();
-            setFormData({ name: '', description: '', status: 'PLANNING', startDate: new Date(), endDate: new Date() });
+            onSaved && onSaved();
         } catch (error) {
-            console.error('Failed to create project:', error);
+            console.error('Failed to save project:', error);
         }
     };
+
+    const mutation = project ? updateProjectMutation : createProjectMutation;
+    const saving = Boolean((mutation as any).isLoading || (mutation as any).isPending || (mutation as any).status === 'loading');
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Create New Project</DialogTitle>
+                    <DialogTitle>{project ? 'Edit Project' : 'Create New Project'}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -101,7 +130,7 @@ const ProjectModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOp
                     </div>
                     <div className="flex space-x-2 pt-4">
                         <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>
-                        <Button type="submit" className="flex-1 bg-gradient-primary" disabled={createProjectMutation.isPending}>{createProjectMutation.isPending ? 'Creating...' : 'Create'}</Button>
+                        <Button type="submit" className="flex-1 bg-gradient-primary" disabled={saving}>{saving ? (project ? 'Saving...' : 'Creating...') : (project ? 'Save' : 'Create')}</Button>
                     </div>
                 </form>
             </DialogContent>

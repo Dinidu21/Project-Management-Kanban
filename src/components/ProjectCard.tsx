@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useTasks, useUpdateProject, useDeleteProject } from '@/hooks/useApi';
 import type { Project } from '@/types';
 
-const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
+const ProjectCard: React.FC<{ project: Project; onEdit?: () => void }> = ({ project, onEdit }) => {
     const { data: tasks = [] } = useTasks();
     const updateProjectMutation = useUpdateProject();
     const deleteProjectMutation = useDeleteProject();
@@ -65,6 +65,10 @@ const ProjectCard: React.FC<{ project: Project }> = ({ project }) => {
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-32 p-1">
+                            <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onEdit && onEdit()}>
+                                <FolderOpen className="h-4 w-4 mr-2" />
+                                Edit
+                            </Button>
                             <Button variant="ghost" size="sm" className="w-full justify-start text-destructive" onClick={handleDelete}>
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete

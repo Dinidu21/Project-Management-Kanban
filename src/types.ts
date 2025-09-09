@@ -1,12 +1,12 @@
 // src/types.ts
 export interface User {
-    id: string;
+    id: string | number;
     name: string;
     email: string;
 }
 
 export interface Project {
-    id: string;
+    id: string | number;
     name: string;
     description: string;
     status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
@@ -18,7 +18,7 @@ export interface Project {
 }
 
 export interface Task {
-    id: string;
+    id: string | number;
     title: string;
     description: string;
     status: 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'DONE';

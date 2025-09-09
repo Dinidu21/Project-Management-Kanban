@@ -10,6 +10,7 @@ import ProjectModal from '@/components/ProjectModal';
 const ProjectsView: React.FC = () => {
     const { data: projects = [], isLoading, error } = useProjects();
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedProject, setSelectedProject] = useState<any | null>(null);
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
     if (isLoading) return <div>Loading projects...</div>;
@@ -53,12 +54,12 @@ const ProjectsView: React.FC = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {projects.map((project) => (
-                        <ProjectCard key={project.id} project={project} />
+                        <ProjectCard key={project.id} project={project} onEdit={() => { setSelectedProject(project); setIsModalOpen(true); }} />
                     ))}
                 </div>
             )}
 
-            <ProjectModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            <ProjectModal isOpen={isModalOpen} project={selectedProject} onClose={() => { setIsModalOpen(false); setSelectedProject(null); }} onSaved={() => { setSelectedProject(null); }} />
         </div>
     );
 };
