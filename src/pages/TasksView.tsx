@@ -1,6 +1,6 @@
 // src/pages/TasksView.tsx
 import React, { useState, useEffect } from 'react';
-import { useTasks, useProjects } from '@/hooks/useApi';
+import { useTasks, useProjects, useUpdateTask } from '@/hooks/useApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -8,10 +8,48 @@ import { Search, Plus } from 'lucide-react';
 import TaskCard from '@/components/TaskCard';
 import TaskModal from '@/components/TaskModal';
 import { Button } from '@/components/ui/button';
+import { useQueryClient } from '@tanstack/react-query';
+import apiService from '@/services/api';
 
 const TasksView: React.FC = () => {
     const { data: tasks = [], isLoading, error } = useTasks();
     const { data: projects = [] } = useProjects();
+    const updateTask = useUpdateTask();
+    const queryClient = useQueryClient();
+
+    const handleDrop = async (e: React.DragEvent, newStatus: string) => {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        if (!id) return;
+        const taskId = Number(id);
+        const previous = queryClient.getQueryData(['tasks']) as any[] | undefined;
+        // optimistic local status update
+        if (previous) {
+            queryClient.setQueryData(['tasks'], previous.map(t => t.id === taskId ? { ...t, status: newStatus } : t));
+        }
+
+        try {
+            // fetch full task from server to guarantee required fields are present
+            const full = await apiService.getTask(taskId);
+
+            const payload: any = {
+                title: full.title,
+                description: full.description || '',
+                status: newStatus,
+                priority: full.priority,
+                dueDate: full.dueDate ?? null,
+                projectId: Number(full.project?.id),
+                assigneeId: full.assignee?.id ?? null,
+                tags: full.tags || [],
+            };
+
+            await updateTask.mutateAsync({ id: taskId, data: payload });
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+        } catch (err) {
+            if (previous) queryClient.setQueryData(['tasks'], previous);
+            console.error('Failed to move task', err);
+        }
+    };
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<any | null>(null);
     // filters drives the filteredTasks; we keep a local searchTerm to enable realtime typing
@@ -95,8 +133,18 @@ const TasksView: React.FC = () => {
                     </div>
                 </div>
             ) : (
+                // Native HTML5 Kanban board
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredTasks.map((task) => <TaskCard key={task.id} task={task} onEdit={() => { setSelectedTask(task); setIsModalOpen(true); }} />)}
+                    {(['TODO', 'IN_PROGRESS', 'REVIEW', 'DONE'] as const).map((col) => (
+                        <div key={col} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, col)} className="min-h-[200px] p-2 rounded-md bg-card">
+                            <h3 className="text-sm font-medium mb-2">{col.replace('_', ' ')}</h3>
+                            {filteredTasks.filter(t => t.status === col).map((task) => (
+                                <div key={task.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', String(task.id))} className="mb-2">
+                                    <TaskCard task={task} onEdit={() => { setSelectedTask(task); setIsModalOpen(true); }} />
+                                </div>
+                            ))}
+                        </div>
+                    ))}
                 </div>
             )}
 

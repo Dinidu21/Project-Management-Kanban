@@ -8,10 +8,10 @@ export interface User {
 export interface Project {
     id: string | number;
     name: string;
-    description: string;
-    status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED';
-    startDate: string;
-    endDate: string;
+    description?: string;
+    status: 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED';
+    startDate?: string;
+    endDate?: string;
     owner: User;
     createdAt: string;
     updatedAt: string;

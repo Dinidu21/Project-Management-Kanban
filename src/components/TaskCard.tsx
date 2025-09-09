@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useDeleteTask } from '@/hooks/useApi';
 import type { Task } from '@/types';
 
-const TaskCard: React.FC<{ task: Task; onEdit?: () => void }> = ({ task, onEdit }) => {
+const TaskCard: React.FC<{ task: Task; onEdit?: () => void; draggableProps?: any; dragHandleProps?: any; innerRef?: any }> = ({ task, onEdit, draggableProps, dragHandleProps, innerRef }) => {
     const deleteTaskMutation = useDeleteTask();
 
     const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'DONE';
@@ -43,57 +43,59 @@ const TaskCard: React.FC<{ task: Task; onEdit?: () => void }> = ({ task, onEdit 
     };
 
     return (
-        <Card className={cn(
-            "shadow-card hover:shadow-elegant transition-all duration-300 animate-fade-in",
-            isOverdue && "border-destructive"
-        )}>
-            <CardContent className="p-4">
-                <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                            <h3 className="font-medium text-sm">{task.title}</h3>
-                            <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+        <div ref={innerRef} {...draggableProps} {...dragHandleProps}>
+            <Card className={cn(
+                "shadow-card hover:shadow-elegant transition-all duration-300 animate-fade-in",
+                isOverdue && "border-destructive"
+            )}>
+                <CardContent className="p-4">
+                    <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <h3 className="font-medium text-sm">{task.title}</h3>
+                                <p className="text-xs text-muted-foreground mt-1">{task.description}</p>
+                            </div>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="ghost" size="sm">
+                                        <MoreVertical className="h-3 w-3" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-32 p-1">
+                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onEdit && onEdit()}>
+                                        <Edit3 className="h-3 w-3 mr-2" />
+                                        Edit
+                                    </Button>
+                                    <Button variant="ghost" size="sm" className="w-full justify-start text-destructive" onClick={handleDelete}>
+                                        <Trash2 className="h-3 w-3 mr-2" />
+                                        Delete
+                                    </Button>
+                                </PopoverContent>
+                            </Popover>
                         </div>
-                        <Popover>
-                            <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-3 w-3" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-32 p-1">
-                                <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onEdit && onEdit()}>
-                                    <Edit3 className="h-3 w-3 mr-2" />
-                                    Edit
-                                </Button>
-                                <Button variant="ghost" size="sm" className="w-full justify-start text-destructive" onClick={handleDelete}>
-                                    <Trash2 className="h-3 w-3 mr-2" />
-                                    Delete
-                                </Button>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
 
-                    <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className={cn('text-xs', getStatusColor(task.status))}>{task.status.replace('_', ' ')}</Badge>
-                        <Badge variant="outline" className={cn('text-xs', getPriorityColor(task.priority))}>{task.priority}</Badge>
-                    </div>
+                        <div className="flex items-center justify-between">
+                            <Badge variant="secondary" className={cn('text-xs', getStatusColor(task.status))}>{task.status.replace('_', ' ')}</Badge>
+                            <Badge variant="outline" className={cn('text-xs', getPriorityColor(task.priority))}>{task.priority}</Badge>
+                        </div>
 
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{task.project.name}</span>
-                        <span className={isOverdue ? 'text-destructive font-medium' : ''}>{format(parseISO(task.dueDate), 'MMM dd')}</span>
-                    </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{task.project.name}</span>
+                            <span className={isOverdue ? 'text-destructive font-medium' : ''}>{format(parseISO(task.dueDate), 'MMM dd')}</span>
+                        </div>
 
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-1">
-                            <Avatar className="h-5 w-5">
-                                <AvatarFallback className="text-xs">{task.assignee?.name?.split(' ').map(n => n[0]).join('') || 'U'}</AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs text-muted-foreground">{task.assignee?.name || 'Unassigned'}</span>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-1">
+                                <Avatar className="h-5 w-5">
+                                    <AvatarFallback className="text-xs">{task.assignee?.name?.split(' ').map(n => n[0]).join('') || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-xs text-muted-foreground">{task.assignee?.name || 'Unassigned'}</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+        </div>
     );
 };
 
