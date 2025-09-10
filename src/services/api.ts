@@ -29,10 +29,26 @@ export interface User {
     email: string;
     firstName?: string;
     lastName?: string;
-    role: "USER" | "ADMIN";
+    role: "ADMIN" | "TEAM_LEAD" | "MEMBER" | "GUEST";
     password?: string;
     createdAt: string;
     updatedAt: string;
+}
+
+// -------- TEAM --------
+export interface TeamRequest {
+    name: string;
+    description?: string;
+}
+
+export interface Team {
+    id: number;
+    name: string;
+    description?: string;
+    owner: User;
+    // members not included by backend (JsonIgnore). This interface keeps it minimal.
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 // -------- PROJECTS --------
@@ -44,6 +60,7 @@ export interface ProjectRequest {
     status: ProjectStatus;
     startDate?: string;  // Java LocalDate serialized as ISO string
     endDate?: string;
+    teamId?: number | null;
 }
 
 export interface Project {
@@ -54,6 +71,7 @@ export interface Project {
     startDate?: string;
     endDate?: string;
     owner: User;
+    team?: Pick<Team, "id" | "name"> | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -70,7 +88,7 @@ export interface TaskRequest {
     dueDate?: string;
     projectId: number;
     assigneeId?: number;
-    tags?: string[];  // exists in Java DTO
+    tags?: string[];  // exists in Java DTO (ignored on backend entity)
 }
 
 export interface Task {
@@ -112,7 +130,7 @@ class ApiService {
             const token = localStorage.getItem("auth_token");
             console.debug('[api] request', { url: config.url, method: config.method, tokenPresent: !!token });
             if (token && token.trim().length > 0) {
-                config.headers.Authorization = `Bearer ${token}`;
+                (config.headers as any).Authorization = `Bearer ${token}`;
             }
             return config;
         });
@@ -221,6 +239,22 @@ class ApiService {
 
     async getTaskCountByStatus(status: TaskStatus): Promise<number> {
         const response: AxiosResponse<number> = await this.client.get(`/tasks/stats/${status}`);
+        return response.data;
+    }
+
+    // -------- TEAMS --------
+    async getTeams(): Promise<Team[]> {
+        const response: AxiosResponse<Team[]> = await this.client.get("/teams");
+        return response.data;
+    }
+
+    async createTeam(data: TeamRequest): Promise<Team> {
+        const response: AxiosResponse<Team> = await this.client.post("/teams", data);
+        return response.data;
+    }
+
+    async updateTeamMembers(id: number, memberIds: number[]): Promise<Team> {
+        const response: AxiosResponse<Team> = await this.client.put(`/teams/${id}/members`, { memberIds });
         return response.data;
     }
 

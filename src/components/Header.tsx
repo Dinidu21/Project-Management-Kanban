@@ -3,7 +3,7 @@ import React from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import ProfileModal from './ProfileModal';
-import { LogOut, Target, Home, FolderOpen, CheckCircle, Sun, Moon, Laptop } from 'lucide-react';
+import { LogOut, Target, Home, FolderOpen, CheckCircle, Sun, Moon, Laptop, Users } from 'lucide-react';
 import { useCurrentUser } from '@/hooks/useApi';
 import apiService from '@/services/api';
 import { useTheme } from 'next-themes';
@@ -17,6 +17,7 @@ const Header: React.FC<{ onNavigate: (view: string) => void; currentView: string
     };
 
     const [isProfileOpen, setIsProfileOpen] = React.useState(false);
+    const role = (user?.role || '').toString();
 
     return (
         <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
@@ -30,8 +31,21 @@ const Header: React.FC<{ onNavigate: (view: string) => void; currentView: string
                     </div>
 
                     <nav className="hidden md:flex items-center space-x-1">
-                        {[{ id: 'dashboard', label: 'Dashboard', icon: Home }, { id: 'projects', label: 'Projects', icon: FolderOpen }, { id: 'tasks', label: 'Tasks', icon: CheckCircle }].map(({ id, label, icon: Icon }) => (
-                            <Button key={id} variant={currentView === id ? 'secondary' : 'ghost'} onClick={() => onNavigate(id)} className="flex items-center space-x-2"><Icon className="h-4 w-4" /><span>{label}</span></Button>
+                        {[
+                            { id: 'dashboard', label: 'Dashboard', icon: Home },
+                            { id: 'projects', label: 'Projects', icon: FolderOpen },
+                            { id: 'tasks', label: 'Tasks', icon: CheckCircle },
+                            { id: 'teams', label: 'Teams', icon: Users },
+                        ].map(({ id, label, icon: Icon }) => (
+                            <Button
+                                key={id}
+                                variant={currentView === id ? 'secondary' : 'ghost'}
+                                onClick={() => onNavigate(id)}
+                                className="flex items-center space-x-2"
+                            >
+                                <Icon className="h-4 w-4" />
+                                <span>{label}</span>
+                            </Button>
                         ))}
                     </nav>
                 </div>
@@ -45,9 +59,10 @@ const Header: React.FC<{ onNavigate: (view: string) => void; currentView: string
                         <Avatar>
                             <AvatarFallback>{(user?.username || 'U').toString().split(' ').map((n: string) => n[0]).join('') || 'U'}</AvatarFallback>
                         </Avatar>
-                        <div className="hidden md:block">
+                        <div className="hidden md:block text-right">
                             <p className="text-sm font-medium">{(user as any)?.firstName || (user as any)?.username || 'User'}</p>
                             <p className="text-xs text-muted-foreground">{user?.email}</p>
+                            {role && <p className="text-[10px] mt-0.5 px-1 py-0.5 inline-block rounded bg-muted text-muted-foreground">{role}</p>}
                         </div>
                     </div>
 

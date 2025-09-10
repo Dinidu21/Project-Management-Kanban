@@ -10,6 +10,8 @@ import apiService, {
     Task,
     User,
     CurrentUser,
+    Team,
+    TeamRequest,
 } from '@/services/api';
 
 // Query Keys
@@ -20,6 +22,8 @@ export const queryKeys = {
     task: (id: number) => ['tasks', id] as const,
     taskStats: (status: string) => ['tasks', 'stats', status] as const,
     user: ['user'] as const,
+    teams: ['teams'] as const,
+    team: (id: number) => ['teams', id] as const,
 };
 
 // -------- AUTH HOOKS --------
@@ -277,6 +281,43 @@ export const useUpdateUser = () => {
         },
         onError: (error: any) => {
             toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update profile', variant: 'destructive' });
+        },
+    });
+};
+
+// -------- TEAM HOOKS --------
+export const useTeams = () => {
+    return useQuery({
+        queryKey: queryKeys.teams,
+        queryFn: () => apiService.getTeams(),
+        enabled: apiService.isAuthenticated(),
+    });
+};
+
+export const useCreateTeam = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (data: TeamRequest) => apiService.createTeam(data),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.teams });
+            toast({ title: 'Success', description: 'Team created successfully' });
+        },
+        onError: (error: any) => {
+            toast({ title: 'Error', description: error.response?.data?.message || 'Failed to create team', variant: 'destructive' });
+        },
+    });
+};
+
+export const useUpdateTeamMembers = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, memberIds }: { id: number; memberIds: number[] }) => apiService.updateTeamMembers(id, memberIds),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.teams });
+            toast({ title: 'Success', description: 'Team members updated' });
+        },
+        onError: (error: any) => {
+            toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update team members', variant: 'destructive' });
         },
     });
 };

@@ -8,13 +8,15 @@ import { Button } from '@/components/ui/button';
 import { MoreVertical, Trash2, FolderOpen } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useTasks, useUpdateProject, useDeleteProject } from '@/hooks/useApi';
+import { useTasks, useUpdateProject, useDeleteProject, useCurrentUser } from '@/hooks/useApi';
 import type { Project } from '@/types';
 
 const ProjectCard: React.FC<{ project: Project; onEdit?: () => void }> = ({ project, onEdit }) => {
     const { data: tasks = [] } = useTasks();
     const updateProjectMutation = useUpdateProject();
     const deleteProjectMutation = useDeleteProject();
+    const { data: currentUser } = useCurrentUser();
+    const isGuest = currentUser?.role === 'GUEST';
 
     console.debug('[ProjectCard] project', project);
 
@@ -23,6 +25,7 @@ const ProjectCard: React.FC<{ project: Project; onEdit?: () => void }> = ({ proj
     const progress = projectTasks.length ? Math.round((completedTasks / projectTasks.length) * 100) : 0;
 
     const handleDelete = async () => {
+        if (isGuest) return;
         if (confirm('Are you sure you want to delete this project?')) {
             // backend expects numeric id; coerce if necessary
             await deleteProjectMutation.mutateAsync(Number(project.id));
@@ -39,8 +42,19 @@ const ProjectCard: React.FC<{ project: Project; onEdit?: () => void }> = ({ proj
         }
     };
 
-    const ownerName = project?.owner?.name || project?.owner?.email || '';
-    const initials = ownerName ? ownerName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+    // Helpers to render user names/initials from available fields
+    const userDisplayName = (u?: any) => {
+        if (!u) return '';
+        const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+        return full || u.username || u.email || '';
+    };
+    const userInitials = (u?: any) => {
+        const name = userDisplayName(u);
+        return name ? name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : '?';
+    };
+
+    const ownerName = userDisplayName(project?.owner as any);
+    const initials = userInitials(project?.owner as any);
     const endDateDisplay = project?.endDate ? (() => {
         try {
             return format(parseISO(project.endDate), 'MMM dd, yyyy');
@@ -65,11 +79,25 @@ const ProjectCard: React.FC<{ project: Project; onEdit?: () => void }> = ({ proj
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-32 p-1">
-                            <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onEdit && onEdit()}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start"
+                                onClick={() => onEdit && onEdit()}
+                                disabled={isGuest}
+                                title={isGuest ? 'Guests cannot edit projects' : undefined}
+                            >
                                 <FolderOpen className="h-4 w-4 mr-2" />
                                 Edit
                             </Button>
-                            <Button variant="ghost" size="sm" className="w-full justify-start text-destructive" onClick={handleDelete}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start text-destructive"
+                                onClick={handleDelete}
+                                disabled={isGuest}
+                                title={isGuest ? 'Guests cannot delete projects' : undefined}
+                            >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
                             </Button>

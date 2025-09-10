@@ -8,15 +8,18 @@ import { Button } from '@/components/ui/button';
 import { MoreVertical, Trash2, Edit3 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { useDeleteTask } from '@/hooks/useApi';
+import { useDeleteTask, useCurrentUser } from '@/hooks/useApi';
 import type { Task } from '@/types';
 
 const TaskCard: React.FC<{ task: Task; onEdit?: () => void; draggableProps?: any; dragHandleProps?: any; innerRef?: any }> = ({ task, onEdit, draggableProps, dragHandleProps, innerRef }) => {
     const deleteTaskMutation = useDeleteTask();
+    const { data: currentUser } = useCurrentUser();
+    const isGuest = currentUser?.role === 'GUEST';
 
     const isOverdue = new Date(task.dueDate) < new Date() && task.status !== 'DONE';
 
     const handleDelete = async () => {
+        if (isGuest) return;
         if (confirm('Are you sure you want to delete this task?')) {
             await deleteTaskMutation.mutateAsync(Number(task.id));
         }
@@ -42,6 +45,18 @@ const TaskCard: React.FC<{ task: Task; onEdit?: () => void; draggableProps?: any
         }
     };
 
+    // Safely compute user display values from available fields
+    const userDisplayName = (u?: any) => {
+        if (!u) return 'Unassigned';
+        const full = [u.firstName, u.lastName].filter(Boolean).join(' ').trim();
+        if (full) return full;
+        return u.username || u.email || 'User';
+    };
+    const userInitials = (u?: any) => {
+        const name = userDisplayName(u);
+        return name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+    };
+
     return (
         <div ref={innerRef} {...draggableProps} {...dragHandleProps}>
             <Card className={cn(
@@ -62,11 +77,25 @@ const TaskCard: React.FC<{ task: Task; onEdit?: () => void; draggableProps?: any
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-32 p-1">
-                                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onEdit && onEdit()}>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start"
+                                        onClick={() => onEdit && onEdit()}
+                                        disabled={isGuest}
+                                        title={isGuest ? 'Guests cannot edit tasks' : undefined}
+                                    >
                                         <Edit3 className="h-3 w-3 mr-2" />
                                         Edit
                                     </Button>
-                                    <Button variant="ghost" size="sm" className="w-full justify-start text-destructive" onClick={handleDelete}>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full justify-start text-destructive"
+                                        onClick={handleDelete}
+                                        disabled={isGuest}
+                                        title={isGuest ? 'Guests cannot delete tasks' : undefined}
+                                    >
                                         <Trash2 className="h-3 w-3 mr-2" />
                                         Delete
                                     </Button>
@@ -87,9 +116,9 @@ const TaskCard: React.FC<{ task: Task; onEdit?: () => void; draggableProps?: any
                         <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-1">
                                 <Avatar className="h-5 w-5">
-                                    <AvatarFallback className="text-xs">{task.assignee?.name?.split(' ').map(n => n[0]).join('') || 'U'}</AvatarFallback>
+                                    <AvatarFallback className="text-xs">{userInitials(task.assignee)}</AvatarFallback>
                                 </Avatar>
-                                <span className="text-xs text-muted-foreground">{task.assignee?.name || 'Unassigned'}</span>
+                                <span className="text-xs text-muted-foreground">{userDisplayName(task.assignee)}</span>
                             </div>
                         </div>
                     </div>

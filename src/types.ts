@@ -5,6 +5,12 @@ export interface User {
     email: string;
     firstName?: string;
     lastName?: string;
+    role?: 'ADMIN' | 'TEAM_LEAD' | 'MEMBER' | 'GUEST';
+}
+
+export interface TeamLite {
+    id: number | string;
+    name: string;
 }
 
 export interface Project {
@@ -15,6 +21,7 @@ export interface Project {
     startDate?: string;
     endDate?: string;
     owner: User;
+    team?: TeamLite | null;
     createdAt: string;
     updatedAt: string;
 }

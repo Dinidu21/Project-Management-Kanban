@@ -1,6 +1,6 @@
 // src/pages/TasksView.tsx
 import React, { useState, useEffect } from 'react';
-import { useTasks, useProjects, useUpdateTask } from '@/hooks/useApi';
+import { useTasks, useProjects, useUpdateTask, useTeams } from '@/hooks/useApi';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,7 @@ import apiService from '@/services/api';
 const TasksView: React.FC = () => {
     const { data: tasks = [], isLoading, error } = useTasks();
     const { data: projects = [] } = useProjects();
+    const { data: teams = [] } = useTeams();
     const updateTask = useUpdateTask();
     const queryClient = useQueryClient();
 
@@ -53,7 +54,7 @@ const TasksView: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedTask, setSelectedTask] = useState<any | null>(null);
     // filters drives the filteredTasks; we keep a local searchTerm to enable realtime typing
-    const [filters, setFilters] = useState({ search: '', status: 'all', priority: 'all', project: 'all' });
+    const [filters, setFilters] = useState({ search: '', status: 'all', priority: 'all', project: 'all', team: 'all' });
     const [searchTerm, setSearchTerm] = useState<string>(filters.search);
 
     // debounce updating the filter.search so the UI updates smoothly while typing
@@ -68,7 +69,11 @@ const TasksView: React.FC = () => {
         if (filters.search && !task.title.toLowerCase().includes(filters.search.toLowerCase())) return false;
         if (filters.status !== 'all' && task.status !== filters.status) return false;
         if (filters.priority !== 'all' && task.priority !== filters.priority) return false;
-        if (filters.project !== 'all' && String(task.project.id) !== filters.project) return false;
+        if (filters.project !== 'all' && String(task.project?.id) !== filters.project) return false;
+        if (filters.team !== 'all') {
+            const teamId = task.project?.team?.id;
+            if (!teamId || String(teamId) !== filters.team) return false;
+        }
         return true;
     });
 
@@ -120,6 +125,17 @@ const TasksView: React.FC = () => {
                             <SelectContent>
                                 <SelectItem value="all">All Projects</SelectItem>
                                 {projects.map(project => <SelectItem key={project.id} value={String(project.id)}>{project.name}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={filters.team} onValueChange={(value) => setFilters({ ...filters, team: value })}>
+                            <SelectTrigger className="w-48">
+                                <SelectValue placeholder="Team" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Teams</SelectItem>
+                                {teams.map((team: any) => (
+                                    <SelectItem key={team.id} value={String(team.id)}>{team.name}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>

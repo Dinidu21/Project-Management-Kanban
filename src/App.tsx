@@ -11,6 +11,7 @@ import TasksView from '@/pages/TasksView';
 import Header from '@/components/Header';
 import AuthForm from '@/components/AuthForm';
 import { useCurrentUser } from '@/hooks/useApi';
+import TeamsView from '@/pages/TeamsView';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,6 +47,7 @@ const AppContent: React.FC = () => {
         {currentView === 'dashboard' && <Dashboard />}
         {currentView === 'projects' && <ProjectsView />}
         {currentView === 'tasks' && <TasksView />}
+        {currentView === 'teams' && <TeamsView />}
       </main>
     </div>
   );

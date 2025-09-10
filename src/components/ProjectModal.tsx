@@ -10,7 +10,7 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format, parseISO } from 'date-fns';
-import { useCreateProject, useUpdateProject } from '@/hooks/useApi';
+import { useCreateProject, useUpdateProject, useTeams } from '@/hooks/useApi';
 import type { Project } from '@/types';
 import { useEffect } from 'react';
 
@@ -20,11 +20,13 @@ const ProjectModal: React.FC<{ isOpen: boolean; onClose: () => void; project?: P
         description: '',
         status: 'PLANNING' as any,
         startDate: new Date(),
-        endDate: new Date()
+        endDate: new Date(),
+        teamId: '' as any
     });
 
     const createProjectMutation = useCreateProject();
     const updateProjectMutation = useUpdateProject();
+    const { data: teams = [] } = useTeams();
 
     // populate form when editing
     useEffect(() => {
@@ -34,23 +36,32 @@ const ProjectModal: React.FC<{ isOpen: boolean; onClose: () => void; project?: P
                 description: project.description || '',
                 status: project.status || 'PLANNING',
                 startDate: project.startDate ? parseISO(project.startDate) : new Date(),
-                endDate: project.endDate ? parseISO(project.endDate) : new Date()
+                endDate: project.endDate ? parseISO(project.endDate) : new Date(),
+                teamId: project.team?.id ? String(project.team.id) : ''
             });
         }
         if (!project && isOpen) {
-            setFormData({ name: '', description: '', status: 'PLANNING', startDate: new Date(), endDate: new Date() });
+            setFormData({
+                name: '',
+                description: '',
+                status: 'PLANNING',
+                startDate: new Date(),
+                endDate: new Date(),
+                teamId: ''
+            });
         }
     }, [project, isOpen]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const payload = {
+            const payload: any = {
                 name: formData.name,
                 description: formData.description,
                 status: formData.status,
                 startDate: formData.startDate.toISOString(),
-                endDate: formData.endDate.toISOString()
+                endDate: formData.endDate.toISOString(),
+                teamId: formData.teamId ? Number(formData.teamId) : null
             };
 
             if (project) {
@@ -127,6 +138,25 @@ const ProjectModal: React.FC<{ isOpen: boolean; onClose: () => void; project?: P
                                 </PopoverContent>
                             </Popover>
                         </div>
+                    </div>
+                    <div>
+                        <Label htmlFor="team">Team</Label>
+                        <Select
+                            value={formData.teamId === '' ? 'none' : String(formData.teamId)}
+                            onValueChange={(value) =>
+                                setFormData({ ...formData, teamId: value === 'none' ? '' : value })
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="No team (personal project)" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">No team</SelectItem>
+                                {teams.map((t: any) => (
+                                    <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                     <div className="flex space-x-2 pt-4">
                         <Button type="button" variant="outline" onClick={onClose} className="flex-1">Cancel</Button>

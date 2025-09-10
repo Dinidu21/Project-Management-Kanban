@@ -1,16 +1,24 @@
 // src/pages/ProjectsView.tsx
 import React, { useState } from 'react';
-import { useProjects, useUpdateProject } from '@/hooks/useApi';
+import { useProjects, useUpdateProject, useTeams } from '@/hooks/useApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Target, Kanban, List, Plus } from 'lucide-react';
 import ProjectCard from '@/components/ProjectCard';
 import ProjectModal from '@/components/ProjectModal';
 
 const ProjectsView: React.FC = () => {
     const { data: projects = [], isLoading, error } = useProjects();
+    const { data: teams = [] } = useTeams();
     const updateProject = useUpdateProject();
     const [draggingId, setDraggingId] = useState<number | null>(null);
+    const [selectedTeam, setSelectedTeam] = useState<'all' | string>('all');
+
+    const filteredProjects = projects.filter((p: any) => {
+        if (selectedTeam === 'all') return true;
+        return String(p?.team?.id ?? '') === String(selectedTeam);
+    });
 
     const handleProjectDrop = async (e: React.DragEvent, newStatus: string) => {
         e.preventDefault();
@@ -73,6 +81,17 @@ const ProjectsView: React.FC = () => {
                             <List className="h-4 w-4" />
                         </Button>
                     </div>
+                    <Select value={selectedTeam} onValueChange={(v) => setSelectedTeam(v)}>
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="Team" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">All Teams</SelectItem>
+                            {teams.map((team: any) => (
+                                <SelectItem key={team.id} value={String(team.id)}>{team.name}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <Button onClick={() => setIsModalOpen(true)} className="bg-gradient-primary">
                         <Plus className="h-4 w-4 mr-2" />
                         New Project
@@ -80,7 +99,7 @@ const ProjectsView: React.FC = () => {
                 </div>
             </div>
 
-            {projects.length === 0 ? (
+            {filteredProjects.length === 0 ? (
                 <div className="text-center py-12">
                     <div className="text-muted-foreground">
                         <Target className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -92,7 +111,7 @@ const ProjectsView: React.FC = () => {
                     {(['PLANNING', 'ACTIVE', 'ON_HOLD', 'COMPLETED', 'CANCELLED'] as const).map(col => (
                         <div key={col} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleProjectDrop(e, col)} className="p-2 rounded-md bg-card">
                             <h3 className="text-sm font-medium mb-2">{col.replace('_', ' ')}</h3>
-                            {projects.filter(p => p.status === col).map(project => (
+                            {filteredProjects.filter(p => p.status === col).map(project => (
                                 <div key={project.id} draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', String(project.id))} className="mb-3">
                                     <ProjectCard project={project} onEdit={() => { setSelectedProject(project); setIsModalOpen(true); }} />
                                 </div>
