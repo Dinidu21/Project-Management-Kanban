@@ -5,6 +5,7 @@ import com.dinidu.pms.dto.ProjectRequest;
 import com.dinidu.pms.entity.Project;
 import com.dinidu.pms.service.ProjectService;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -63,4 +64,13 @@ public class ProjectController {
             return ResponseEntity.badRequest().build();
         }
     }
+    
+    @GetMapping("/test-log")
+    public ResponseEntity<String> testLog() {
+        Logger log = null;
+        log.info("INFO test log");
+        log.error("ERROR test log", new RuntimeException("simulated"));
+        return ResponseEntity.ok("ok");
+    }
+
 }

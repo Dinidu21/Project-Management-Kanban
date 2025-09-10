@@ -1,7 +1,5 @@
 package com.dinidu.pms.dto;
 
-
-
 import com.dinidu.pms.entity.Project;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -17,4 +15,7 @@ public class ProjectRequest {
     private Project.Status status;
     private LocalDate startDate;
     private LocalDate endDate;
+
+    // Optional: associate with a team
+    private Long teamId;
 }

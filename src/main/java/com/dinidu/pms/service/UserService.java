@@ -36,7 +36,7 @@ public class UserService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
-                .role(User.Role.USER)
+                .role(User.Role.MEMBER)
                 .build();
 
         userRepository.save(user);

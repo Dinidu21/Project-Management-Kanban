@@ -46,7 +46,7 @@ public class User implements UserDetails {
     private String lastName;
 
     @Enumerated(EnumType.STRING)
-    private Role role = Role.USER;
+    private Role role = Role.MEMBER;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
@@ -55,6 +55,10 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "assignee", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Task> tasks;
+
+    @ManyToMany(mappedBy = "members", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<Team> teams;
 
     @CreatedDate
     @Column(updatable = false)
@@ -69,6 +73,6 @@ public class User implements UserDetails {
     }
 
     public enum Role {
-        USER, ADMIN
+        ADMIN, TEAM_LEAD, MEMBER, GUEST
     }
 }

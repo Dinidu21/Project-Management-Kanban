@@ -11,7 +11,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
@@ -21,9 +20,9 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@Table(name = "projects")
+@Table(name = "teams")
 @EntityListeners(AuditingEntityListener.class)
-public class Project {
+public class Team {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,24 +33,22 @@ public class Project {
     @Column(length = 1000)
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    private Status status = Status.PLANNING;
-
-    private LocalDate startDate;
-    private LocalDate endDate;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
+    @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    // New: associate project to a team
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team_id")
-    private Team team;
-
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "team_members",
+        joinColumns = @JoinColumn(name = "team_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
     @JsonIgnore
-    private Set<Task> tasks;
+    private Set<User> members;
+
+    @OneToMany(mappedBy = "team", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
+    private Set<Project> projects;
 
     @CreatedDate
     @Column(updatable = false)
@@ -59,8 +56,4 @@ public class Project {
 
     @LastModifiedDate
     private LocalDateTime updatedAt;
-
-    public enum Status {
-        PLANNING, ACTIVE, ON_HOLD, COMPLETED, CANCELLED
-    }
 }
