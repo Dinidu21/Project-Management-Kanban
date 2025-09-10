@@ -7,6 +7,7 @@ import com.dinidu.pms.service.TeamService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,12 +20,14 @@ public class TeamController {
     private final TeamService teamService;
 
     @PostMapping
-    public ResponseEntity<Team> createTeam(@Valid @RequestBody TeamRequest request) {
+    public ResponseEntity<?> createTeam(@Valid @RequestBody TeamRequest request) {
         try {
             Team team = teamService.createTeam(request);
-            return ResponseEntity.ok(team);
+            return ResponseEntity.status(HttpStatus.CREATED).body(team);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
 
@@ -35,12 +38,21 @@ public class TeamController {
     }
 
     @PutMapping("/{id}/members")
-    public ResponseEntity<Team> updateMembers(@PathVariable Long id, @RequestBody TeamMembersRequest request) {
+    public ResponseEntity<?> updateMembers(@PathVariable Long id, @RequestBody TeamMembersRequest request) {
         try {
             Team updated = teamService.updateMembers(id, request);
             return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().build();
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
+        return null;
+    }
+
+    @GetMapping("/check-name/{name}")
+    public ResponseEntity<Boolean> checkTeamName(@PathVariable String name) {
+        boolean exists = teamService.checkTeamNameExists(name);
+        return ResponseEntity.ok(exists);
     }
 }

@@ -142,7 +142,7 @@ public class OAuthController {
                         .email(email)
                         .username(candidate)
                         .firstName(name)
-                        .role(User.Role.USER)
+                        .role(User.Role.ADMIN)
                         .password("oauth")
                         .build();
                 return userRepository.save(u);
@@ -224,7 +224,7 @@ public class OAuthController {
                         .email(finalEmail)
                         .username(candidate)
                         .firstName((String) userInfo.get("name"))
-                        .role(User.Role.USER)
+                        .role(User.Role.ADMIN)
                         .password("oauth")
                         .build();
                 return userRepository.save(u);

@@ -20,14 +20,14 @@ import java.util.Set;
 @AllArgsConstructor
 @Entity
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-@Table(name = "teams")
+@Table(name = "teams", uniqueConstraints = {@UniqueConstraint(columnNames = {"name"})})
 @EntityListeners(AuditingEntityListener.class)
 public class Team {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String name;
 
     @Column(length = 1000)
@@ -39,9 +39,9 @@ public class Team {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "team_members",
-        joinColumns = @JoinColumn(name = "team_id"),
-        inverseJoinColumns = @JoinColumn(name = "user_id")
+            name = "team_members",
+            joinColumns = @JoinColumn(name = "team_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id")
     )
     @JsonIgnore
     private Set<User> members;
