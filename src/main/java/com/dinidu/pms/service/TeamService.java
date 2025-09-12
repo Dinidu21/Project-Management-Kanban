@@ -102,6 +102,59 @@ public class TeamService {
         return teamRepository.save(team);
     }
 
+    @PreAuthorize("isAuthenticated() and !hasRole('GUEST')")
+    public Team updateTeam(Long teamId, TeamRequest request) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        User current = currentUser();
+        boolean isAdmin = current.getRole() == User.Role.ADMIN;
+
+        // Only owner or admin can update team
+        if (!isAdmin && !team.getOwner().getId().equals(current.getId())) {
+            throw new RuntimeException("Access denied: Only team owner or admin can update team");
+        }
+
+        String name = request.getName() != null ? request.getName().trim() : null;
+        if (name != null && !name.isEmpty()) {
+            // Check if new name conflicts with existing teams (excluding current team)
+            if (!name.equalsIgnoreCase(team.getName()) && checkTeamNameExists(name)) {
+                throw new IllegalArgumentException("A team with this name already exists");
+            }
+            team.setName(name);
+        }
+
+        if (request.getDescription() != null) {
+            team.setDescription(request.getDescription());
+        }
+
+        try {
+            Team saved = teamRepository.save(team);
+            log.info("Team updated successfully: {} by user: {}", saved.getName(), current.getUsername());
+            return saved;
+        } catch (org.springframework.dao.DataIntegrityViolationException ex) {
+            log.error("Team update failed due to data integrity violation for user: {} with name: {}", current.getUsername(), name, ex);
+            throw new IllegalArgumentException("Failed to update team", ex);
+        }
+    }
+
+    @PreAuthorize("isAuthenticated() and !hasRole('GUEST')")
+    public void deleteTeam(Long teamId) {
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found"));
+
+        User current = currentUser();
+        boolean isAdmin = current.getRole() == User.Role.ADMIN;
+
+        // Only owner or admin can delete team
+        if (!isAdmin && !team.getOwner().getId().equals(current.getId())) {
+            throw new RuntimeException("Access denied: Only team owner or admin can delete team");
+        }
+
+        log.info("Deleting team: {} by user: {}", team.getName(), current.getUsername());
+        teamRepository.delete(team);
+    }
+
     public boolean checkTeamNameExists(String name) {
         if (name == null) return false;
         String trimmedName = name.trim();

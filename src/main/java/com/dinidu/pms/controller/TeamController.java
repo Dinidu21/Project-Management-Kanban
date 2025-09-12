@@ -49,6 +49,30 @@ public class TeamController {
         return null;
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTeam(@PathVariable Long id, @Valid @RequestBody TeamRequest request) {
+        try {
+            Team updated = teamService.updateTeam(id, request);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteTeam(@PathVariable Long id) {
+        try {
+            teamService.deleteTeam(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
     @GetMapping("/check-name/{name}")
     public ResponseEntity<Boolean> checkTeamName(@PathVariable String name) {
         boolean exists = teamService.checkTeamNameExists(name);
