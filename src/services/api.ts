@@ -258,6 +258,11 @@ class ApiService {
         return response.data;
     }
 
+    async checkTeamNameExists(name: string): Promise<boolean> {
+        const response: AxiosResponse<boolean> = await this.client.get(`/teams/check-name/${encodeURIComponent(name)}`);
+        return response.data;
+    }
+
     // -------- USER --------
     isAuthenticated(): boolean {
         return !!localStorage.getItem("auth_token");

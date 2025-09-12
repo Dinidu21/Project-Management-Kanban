@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useCreateTeam, useUpdateTeamMembers } from '@/hooks/useApi';
 import { AxiosError } from 'axios';
-import axios from 'axios'; // Import axios for the name check request
+import apiService from '@/services/api';
 
 type TeamLite = {
     id: number;
@@ -37,8 +37,8 @@ const TeamModal: React.FC<{
                 return;
             }
             try {
-                const response = await axios.get(`/api/teams/check-name/${encodeURIComponent(name)}`);
-                setIsNameAvailable(!response.data); // If response.data is true, name exists, so not available
+                const exists = await apiService.checkTeamNameExists(name.trim());
+                setIsNameAvailable(!exists); // If exists is true, name is taken, so not available
                 setErrorMessage(null);
             } catch (error) {
                 console.error('[TeamModal] check team name failed', error);
@@ -80,18 +80,26 @@ const TeamModal: React.FC<{
 
     const handleSubmitCreate = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            setErrorMessage('Team name is required.');
+            return;
+        }
+
         if (isNameAvailable === false) {
             setErrorMessage('A team with this name already exists.');
             return;
         }
+
         try {
-            await createTeam.mutateAsync({ name, description });
+            await createTeam.mutateAsync({ name: trimmedName, description });
             onClose();
             onSaved && onSaved();
         } catch (error) {
             console.error('[TeamModal] create failed', error);
             if (error instanceof AxiosError && error.response?.data) {
-                setErrorMessage(error.response.data);
+                setErrorMessage(typeof error.response.data === 'string' ? error.response.data : 'Failed to create team.');
             } else {
                 setErrorMessage('Failed to create team. Please try again.');
             }
@@ -151,6 +159,7 @@ const TeamModal: React.FC<{
                                 onChange={(e) => setName(e.target.value)}
                                 required
                                 className={isNameAvailable === false ? 'border-red-500' : ''}
+                                placeholder="Enter team name"
                             />
                             {isNameAvailable === false && (
                                 <p className="text-xs text-red-500 mt-1">This team name is already taken.</p>
