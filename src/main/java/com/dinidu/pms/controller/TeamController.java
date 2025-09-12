@@ -24,9 +24,8 @@ public class TeamController {
         try {
             Team team = teamService.createTeam(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(team);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         } catch (RuntimeException e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
