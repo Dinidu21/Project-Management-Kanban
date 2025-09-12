@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { useCreateTeam, useUpdateTeamMembers } from '@/hooks/useApi';
+import { useCreateTeam, useUpdateTeam, useUpdateTeamMembers } from '@/hooks/useApi';
 import { AxiosError } from 'axios';
 import apiService from '@/services/api';
 
@@ -14,12 +14,15 @@ type TeamLite = {
     description?: string;
 };
 
+type ModalMode = 'create' | 'edit' | 'manage-members';
+
 const TeamModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
     team?: TeamLite | null;
+    mode?: ModalMode;
     onSaved?: () => void;
-}> = ({ isOpen, onClose, team = null, onSaved }) => {
+}> = ({ isOpen, onClose, team = null, mode = 'create', onSaved }) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [memberIdsInput, setMemberIdsInput] = useState('');
@@ -27,6 +30,7 @@ const TeamModal: React.FC<{
     const [isNameAvailable, setIsNameAvailable] = useState<boolean | null>(null);
 
     const createTeam = useCreateTeam();
+    const updateTeam = useUpdateTeam();
     const updateMembers = useUpdateTeamMembers();
 
     // Debounced function to check team name availability
@@ -60,23 +64,28 @@ const TeamModal: React.FC<{
 
     useEffect(() => {
         if (isOpen) {
-            if (team) {
+            if (mode === 'edit' && team) {
+                setName(team.name);
+                setDescription(team.description || '');
+                setErrorMessage(null);
+                setIsNameAvailable(null);
+            } else if (mode === 'manage-members' && team) {
                 setMemberIdsInput('');
                 setErrorMessage(null);
-            } else {
+            } else if (mode === 'create') {
                 setName('');
                 setDescription('');
                 setErrorMessage(null);
                 setIsNameAvailable(null);
             }
         }
-    }, [isOpen, team]);
+    }, [isOpen, team, mode]);
 
     useEffect(() => {
-        if (!team) {
+        if ((mode === 'create' || mode === 'edit') && name.trim()) {
             checkTeamName(name);
         }
-    }, [name, checkTeamName, team]);
+    }, [name, checkTeamName, mode]);
 
     const handleSubmitCreate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -102,6 +111,35 @@ const TeamModal: React.FC<{
                 setErrorMessage(typeof error.response.data === 'string' ? error.response.data : 'Failed to create team.');
             } else {
                 setErrorMessage('Failed to create team. Please try again.');
+            }
+        }
+    };
+
+    const handleSubmitEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!team) return;
+
+        const trimmedName = name.trim();
+        if (!trimmedName) {
+            setErrorMessage('Team name is required.');
+            return;
+        }
+
+        if (isNameAvailable === false && trimmedName !== team.name) {
+            setErrorMessage('A team with this name already exists.');
+            return;
+        }
+
+        try {
+            await updateTeam.mutateAsync({ id: Number(team.id), data: { name: trimmedName, description } });
+            onClose();
+            onSaved && onSaved();
+        } catch (error) {
+            console.error('[TeamModal] edit failed', error);
+            if (error instanceof AxiosError && error.response?.data) {
+                setErrorMessage(typeof error.response.data === 'string' ? error.response.data : 'Failed to update team.');
+            } else {
+                setErrorMessage('Failed to update team. Please try again.');
             }
         }
     };
@@ -133,6 +171,8 @@ const TeamModal: React.FC<{
 
     const savingCreate =
         (createTeam as any).isLoading || (createTeam as any).isPending || (createTeam as any).status === 'loading';
+    const savingEdit =
+        (updateTeam as any).isLoading || (updateTeam as any).isPending || (updateTeam as any).status === 'loading';
     const savingMembers =
         (updateMembers as any).isLoading ||
         (updateMembers as any).isPending ||
@@ -142,15 +182,19 @@ const TeamModal: React.FC<{
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>{team ? `Manage Team: ${team.name}` : 'Create New Team'}</DialogTitle>
+                    <DialogTitle>
+                        {mode === 'create' && 'Create New Team'}
+                        {mode === 'edit' && `Edit Team: ${team?.name}`}
+                        {mode === 'manage-members' && `Manage Team: ${team?.name}`}
+                    </DialogTitle>
                 </DialogHeader>
 
                 {errorMessage && (
                     <div className="text-red-500 text-sm mb-4">{errorMessage}</div>
                 )}
 
-                {!team ? (
-                    <form onSubmit={handleSubmitCreate} className="space-y-4">
+                {(mode === 'create' || mode === 'edit') ? (
+                    <form onSubmit={mode === 'create' ? handleSubmitCreate : handleSubmitEdit} className="space-y-4">
                         <div>
                             <Label htmlFor="team-name">Team Name</Label>
                             <Input
@@ -161,7 +205,10 @@ const TeamModal: React.FC<{
                                 className={isNameAvailable === false ? 'border-red-500' : ''}
                                 placeholder="Enter team name"
                             />
-                            {isNameAvailable === false && (
+                            {isNameAvailable === false && mode === 'create' && (
+                                <p className="text-xs text-red-500 mt-1">This team name is already taken.</p>
+                            )}
+                            {isNameAvailable === false && mode === 'edit' && name !== team?.name && (
                                 <p className="text-xs text-red-500 mt-1">This team name is already taken.</p>
                             )}
                             {isNameAvailable === true && (
@@ -185,13 +232,13 @@ const TeamModal: React.FC<{
                             <Button
                                 type="submit"
                                 className="flex-1 bg-gradient-primary"
-                                disabled={savingCreate || isNameAvailable === false}
+                                disabled={(mode === 'create' ? savingCreate : savingEdit) || (isNameAvailable === false && ((mode === 'create') || (mode === 'edit' && name !== team?.name)))}
                             >
-                                {savingCreate ? 'Creating...' : 'Create'}
+                                {(mode === 'create' ? savingCreate : savingEdit) ? (mode === 'create' ? 'Creating...' : 'Updating...') : (mode === 'create' ? 'Create' : 'Update')}
                             </Button>
                         </div>
                     </form>
-                ) : (
+                ) : team ? (
                     <form onSubmit={handleSubmitMembers} className="space-y-4">
                         <div>
                             <Label>Team</Label>
@@ -222,6 +269,10 @@ const TeamModal: React.FC<{
                             </Button>
                         </div>
                     </form>
+                ) : (
+                    <div className="text-center py-4">
+                        <p className="text-muted-foreground">No team selected</p>
+                    </div>
                 )}
             </DialogContent>
         </Dialog>

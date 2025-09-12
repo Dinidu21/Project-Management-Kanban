@@ -253,6 +253,15 @@ class ApiService {
         return response.data;
     }
 
+    async updateTeam(id: number, data: TeamRequest): Promise<Team> {
+        const response: AxiosResponse<Team> = await this.client.put(`/teams/${id}`, data);
+        return response.data;
+    }
+
+    async deleteTeam(id: number): Promise<void> {
+        await this.client.delete(`/teams/${id}`);
+    }
+
     async updateTeamMembers(id: number, memberIds: number[]): Promise<Team> {
         const response: AxiosResponse<Team> = await this.client.put(`/teams/${id}/members`, { memberIds });
         return response.data;

@@ -1,16 +1,21 @@
 // src/pages/TeamsView.tsx
 import React, { useState } from 'react';
-import { useTeams } from '@/hooks/useApi';
+import { useTeams, useDeleteTeam } from '@/hooks/useApi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Users, Settings } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Plus, Users, Settings, Edit, Trash2 } from 'lucide-react';
 import TeamModal from '@/components/TeamModal';
 
 const TeamsView: React.FC = () => {
     const { data: teams = [], isLoading, error } = useTeams();
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editTeam, setEditTeam] = useState<{ id: number; name: string; description?: string } | null>(null);
     const [manageTeam, setManageTeam] = useState<{ id: number; name: string; description?: string } | null>(null);
+    const [deleteTeam, setDeleteTeam] = useState<{ id: number; name: string } | null>(null);
+
+    const deleteTeamMutation = useDeleteTeam();
 
     if (isLoading) return <div>Loading teams...</div>;
     if (error) return <div>Error loading teams: {(error as any)?.message || 'Unknown error'}</div>;
@@ -42,9 +47,33 @@ const TeamsView: React.FC = () => {
                                         <h3 className="text-lg font-semibold">{team.name}</h3>
                                         <p className="text-sm text-muted-foreground mt-1">{team.description || '—'}</p>
                                     </div>
-                                    <Button variant="ghost" size="sm" onClick={() => setManageTeam({ id: team.id, name: team.name, description: team.description })}>
-                                        <Settings className="h-4 w-4" />
-                                    </Button>
+                                    <div className="flex space-x-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setEditTeam({ id: team.id, name: team.name, description: team.description })}
+                                            title="Edit team"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setManageTeam({ id: team.id, name: team.name, description: team.description })}
+                                            title="Manage members"
+                                        >
+                                            <Settings className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setDeleteTeam({ id: team.id, name: team.name })}
+                                            title="Delete team"
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                 </div>
                                 <div className="mt-4 text-xs text-muted-foreground">
                                     <div>Owner: {team?.owner?.username || team?.owner?.email || '—'}</div>
@@ -59,7 +88,17 @@ const TeamsView: React.FC = () => {
             <TeamModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
+                mode="create"
                 onSaved={() => setIsModalOpen(false)}
+            />
+
+            {/* Edit team */}
+            <TeamModal
+                isOpen={!!editTeam}
+                onClose={() => setEditTeam(null)}
+                team={editTeam as any}
+                mode="edit"
+                onSaved={() => setEditTeam(null)}
             />
 
             {/* Manage members for a team */}
@@ -67,8 +106,39 @@ const TeamsView: React.FC = () => {
                 isOpen={!!manageTeam}
                 onClose={() => setManageTeam(null)}
                 team={manageTeam as any}
+                mode="manage-members"
                 onSaved={() => setManageTeam(null)}
             />
+
+            {/* Delete confirmation dialog */}
+            <AlertDialog open={!!deleteTeam} onOpenChange={() => setDeleteTeam(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Team</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete the team "{deleteTeam?.name}"? This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={async () => {
+                                if (deleteTeam) {
+                                    try {
+                                        await deleteTeamMutation.mutateAsync(deleteTeam.id);
+                                        setDeleteTeam(null);
+                                    } catch (error) {
+                                        console.error('Failed to delete team:', error);
+                                    }
+                                }
+                            }}
+                            className="bg-red-500 hover:bg-red-600"
+                        >
+                            Delete
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

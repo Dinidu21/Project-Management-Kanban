@@ -308,6 +308,35 @@ export const useCreateTeam = () => {
     });
 };
 
+export const useUpdateTeam = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: ({ id, data }: { id: number; data: TeamRequest }) => apiService.updateTeam(id, data),
+        onSuccess: (updatedTeam) => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.teams });
+            queryClient.setQueryData(queryKeys.team(updatedTeam.id), updatedTeam);
+            toast({ title: 'Success', description: 'Team updated successfully' });
+        },
+        onError: (error: any) => {
+            toast({ title: 'Error', description: error.response?.data?.message || 'Failed to update team', variant: 'destructive' });
+        },
+    });
+};
+
+export const useDeleteTeam = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (id: number) => apiService.deleteTeam(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.teams });
+            toast({ title: 'Success', description: 'Team deleted successfully' });
+        },
+        onError: (error: any) => {
+            toast({ title: 'Error', description: error.response?.data?.message || 'Failed to delete team', variant: 'destructive' });
+        },
+    });
+};
+
 export const useUpdateTeamMembers = () => {
     const queryClient = useQueryClient();
     return useMutation({
