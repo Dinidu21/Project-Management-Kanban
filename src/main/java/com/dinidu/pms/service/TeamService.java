@@ -45,6 +45,12 @@ public class TeamService {
             throw new IllegalArgumentException("Team name is required");
         }
 
+        // Check if team name already exists (trimmed and case-insensitive)
+        if (checkTeamNameExists(name)) {
+            log.warn("Team creation failed: team name '{}' already exists for user: {}", name, current.getUsername());
+            throw new IllegalArgumentException("A team with this name already exists");
+        }
+
         Team team = Team.builder()
                 .name(name)
                 .description(req.getDescription())
@@ -61,7 +67,7 @@ public class TeamService {
             log.info("Team created successfully: {} for user: {}", saved.getName(), current.getUsername());
             return saved;
         } catch (org.springframework.dao.DataIntegrityViolationException ex) {
-            log.warn("Team creation failed due to data integrity violation for user: {} with name: {}", current.getUsername(), name, ex);
+            log.error("Team creation failed due to data integrity violation for user: {} with name: {}", current.getUsername(), name, ex);
             throw new IllegalArgumentException("A team with this name already exists", ex);
         }
     }
@@ -97,7 +103,11 @@ public class TeamService {
     }
 
     public boolean checkTeamNameExists(String name) {
-        return teamRepository.existsByName(name.trim());
+        if (name == null) return false;
+        String trimmedName = name.trim();
+        if (trimmedName.isEmpty()) return false;
+
+        return teamRepository.existsByNameTrimmedIgnoreCase(trimmedName);
     }
 
     private User currentUser() {

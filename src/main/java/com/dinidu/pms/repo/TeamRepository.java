@@ -14,4 +14,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findTeamsForUser(User user);
 
     boolean existsByName(String name);
+
+    @Query("SELECT COUNT(t) > 0 FROM Team t WHERE TRIM(LOWER(t.name)) = TRIM(LOWER(:name))")
+    boolean existsByNameTrimmedIgnoreCase(String name);
 }

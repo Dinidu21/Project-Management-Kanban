@@ -33,3 +33,5 @@ build/
 .vscode/
 application.properties
 D:\PL\Java\Project Management App\src\main\resources\application.properties
+/docker-compose.yml
+/src/main/java/com/dinidu/pms/logstash/pipeline/logstash.conf
