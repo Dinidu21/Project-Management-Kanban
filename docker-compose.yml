@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.18.6
@@ -51,6 +49,21 @@ services:
       - "5601:5601"
     networks:
       - elastic
+
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.18.6
+    container_name: apm-server
+    depends_on:
+      - elasticsearch
+    environment:
+      - output.elasticsearch.hosts=["http://elasticsearch:9200"]
+      - apm-server.kibana.enabled=true
+      - apm-server.kibana.host=http://kibana:5601
+    ports:
+      - "8200:8200"
+    networks:
+      - elastic
+
 
 volumes:
   es_data:
