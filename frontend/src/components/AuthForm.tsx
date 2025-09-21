@@ -69,7 +69,7 @@ const AuthForm: React.FC<{ isLogin: boolean; onToggle: () => void; initialUserna
                             {/* Google Login */}
                             <button
                                 onClick={() => {
-                                    window.location.href = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/auth/oauth2/redirect/google';
+                                    window.location.href = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api/auth/oauth2/redirect/google';
                                 }}
                                 className="inline-flex items-center space-x-2 px-3 py-2 rounded-md border hover:shadow-sm"
                             >
@@ -85,7 +85,7 @@ const AuthForm: React.FC<{ isLogin: boolean; onToggle: () => void; initialUserna
                             {/* GitHub Login */}
                             <button
                                 onClick={() => {
-                                    window.location.href = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/auth/oauth2/redirect/github';
+                                    window.location.href = (import.meta.env.VITE_API_URL || 'http://localhost:8080') + '/api/auth/oauth2/redirect/github';
                                 }}
                                 className="inline-flex items-center space-x-2 px-3 py-2 rounded-md border hover:shadow-sm"
                             >
