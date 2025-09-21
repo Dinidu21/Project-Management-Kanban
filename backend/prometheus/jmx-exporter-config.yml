@@ -1,0 +1,23 @@
+startDelaySeconds: 0
+username: ""
+password: ""
+lowercaseOutputName: true
+lowercaseOutputLabelNames: true
+
+# Common rules for JVM and Spring Boot
+rules:
+  - pattern: 'java.lang:type=MemoryPool,name=(.*)'
+    name: jvm_memory_pool_bytes_used
+    type: GAUGE
+    labels:
+      pool: "$1"
+
+  - pattern: 'java.lang:type=GarbageCollector,name=(.*)'
+    name: jvm_gc_collections_total
+    type: COUNTER
+    labels:
+      gc: "$1"
+
+  - pattern: 'org.springframework.boot:type=Endpoint,name=(.*)'
+    name: springboot_endpoint_$1
+    type: GAUGE
