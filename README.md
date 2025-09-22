@@ -4,7 +4,7 @@ A **full-stack Kanban project management application** built with a modern tech 
 This repository combines both the **frontend (React + Vite + TypeScript + Tailwind)** and **backend (Spring Boot + Maven + ELK + Prometheus/Grafana)** into a single monorepo.
 
 
-## Youtube [Link](https://youtu.be/ksZ4Z6YW-mA?si=p3334xg1S9GIE6zC)
+## Youtube [Link](https://youtu.be/InaLiBwm70I?si=OSmgPXksTRoxupIg)
 
 
 ## 🚀 Tech Stack
@@ -48,11 +48,11 @@ This repository combines both the **frontend (React + Vite + TypeScript + Tailwi
 
 ---
 
-## 🖼️ Screenshots
+## 🖼️ Screenshots [More](screenshots)
 
 | Dashboard | Projects | Teams |
 |-----------|----------|-------|
-| ![Dashboard](/screenshots/dashboard.png) | ![Projects](./docs/screenshots/projects.png) | ![Teams](./docs/screenshots/teams.png) |
+| ![Dashboard](screenshots/app/dashboard.png) | ![Projects](screenshots/app/projects.png) | ![Teams](screenshots/app/Team.png) |
 
 ---
 
